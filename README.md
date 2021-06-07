@@ -10,6 +10,8 @@ This is a research project to explore the 3D laser scan with free tools. Feel fr
 
 This project has been developed in [Python](https://www.python.org/) language and it is distributed under [GPL v2](https://www.gnu.org/licenses/gpl-2.0.html) license.
 
+This fork will be a Python3.x port. Have fun!
+
 ## Installation
 
 #### Supported
