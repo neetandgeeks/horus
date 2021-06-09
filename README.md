@@ -20,7 +20,7 @@ This Python 3.x port is currently unstable.
 ### With Python 3.8.x
 
 * 0. [Install Python 3.8.x](https://www.python.org/downloads/) and [Arduino Drivers](https://www.arduino.cc/en/software) ([if needed](https://www.arduino.cc/en/Guide/DriverInstallation)).
-* 1. [Download this Python 3.x port.](https://github.com/neetandgeeks/horus/archive/refs/heads/master.zip)
+* 1. [Download this Python 3.x port of Horus.](https://github.com/neetandgeeks/horus/archive/refs/heads/master.zip)
 * 2. [Making virtual environment.](https://docs.python.org/3/tutorial/venv.html)
 * 3. [Install requirements.](https://docs.python.org/3/tutorial/venv.html#managing-packages-with-pip)
 * 4. Run horus.py script.
