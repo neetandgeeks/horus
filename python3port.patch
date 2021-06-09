@@ -1,0 +1,2049 @@
+diff -uprN build_orig/src/horus/engine/algorithms/laser_segmentation.py build_custom/src/horus/engine/algorithms/laser_segmentation.py
+--- build_orig/src/horus/engine/algorithms/laser_segmentation.py	2021-06-09 09:49:57.000000000 +0900
++++ build_custom/src/horus/engine/algorithms/laser_segmentation.py	2019-04-27 14:55:06.330394300 +0900
+@@ -121,7 +121,7 @@ class LaserSegmentation(object):
+             _min = peak - self.window_value
+             _max = peak + self.window_value + 1
+             mask = np.zeros_like(image)
+-            for i in xrange(self.calibration_data.height):
++            for i in range(self.calibration_data.height):
+                 mask[i, _min[i]:_max[i]] = 255
+             # Apply mask
+             image = cv2.bitwise_and(image, mask)
+@@ -210,7 +210,7 @@ class LaserSegmentation(object):
+         best_inlier_num = 0
+         best_inliers = None
+         data_idx = np.arange(data.shape[0])
+-        for _ in xrange(max_trials):
++        for _ in range(max_trials):
+             sample = data[np.random.randint(0, data.shape[0], 2)]
+             if model_class.is_degenerate(sample):
+                 continue
+diff -uprN build_orig/src/horus/engine/algorithms/point_cloud_roi.py build_custom/src/horus/engine/algorithms/point_cloud_roi.py
+--- build_orig/src/horus/engine/algorithms/point_cloud_roi.py	2021-06-09 09:49:58.000000000 +0900
++++ build_custom/src/horus/engine/algorithms/point_cloud_roi.py	2021-06-05 13:33:19.382045000 +0900
+@@ -40,9 +40,9 @@ class PointCloudROI(object):
+         self._center_v = 0
+         self._circle_resolution = 30
+         self._circle_array = np.array([[np.cos(i * 2 * np.pi / self._circle_resolution)
+-                                        for i in xrange(self._circle_resolution)],
++                                        for i in range(self._circle_resolution)],
+                                        [np.sin(i * 2 * np.pi / self._circle_resolution)
+-                                        for i in xrange(self._circle_resolution)],
++                                        for i in range(self._circle_resolution)],
+                                        np.zeros(self._circle_resolution)])
+ 
+     def set_diameter(self, value):
+@@ -194,9 +194,9 @@ class PointCloudROI(object):
+             v_ = np.array(v.T)
+ 
+             # Lower cylinder base
+-            a = v_[:(len(v_) / 2)]
++            a = v_[:(len(v_) // 2)]
+             # Upper cylinder base
+-            b = v_[(len(v_) / 2):]
++            b = v_[(len(v_) // 2):]
+ 
+             self._lower_vmin = int(round(np.max(a)))
+             self._lower_vmax = int(round(np.min(a)))
+diff -uprN build_orig/src/horus/engine/calibration/autocheck.py build_custom/src/horus/engine/calibration/autocheck.py
+--- build_orig/src/horus/engine/calibration/autocheck.py	2021-06-09 09:49:59.000000000 +0900
++++ build_custom/src/horus/engine/calibration/autocheck.py	2019-04-27 14:55:06.703454300 +0900
+@@ -91,7 +91,7 @@ class Autocheck(Calibration):
+             self._progress_callback(0)
+ 
+         # Capture data
+-        for i in xrange(0, 360, scan_step):
++        for i in range(0, 360, scan_step):
+             if not self._is_calibrating:
+                 raise CalibrationCancel()
+             image = self.image_capture.capture_pattern()
+@@ -111,9 +111,9 @@ class Autocheck(Calibration):
+ 
+         # Check motor direction
+         max_x = max(patterns_detected.values())
+-        max_i = [key for key, value in patterns_detected.items() if value == max_x][0]
++        max_i = [key for key, value in list(patterns_detected.items()) if value == max_x][0]
+         min_v = max_x
+-        for i in xrange(max_i, max_i + 360, scan_step):
++        for i in range(max_i, max_i + 360, scan_step):
+             if i % 360 in patterns_detected:
+                 v = patterns_detected[i % 360]
+                 patterns_sorted[i] = v
+@@ -123,8 +123,8 @@ class Autocheck(Calibration):
+                     raise WrongMotorDirection()
+ 
+         # Move to nearest position
+-        x = np.array(patterns_sorted.keys())
+-        y = np.array(patterns_sorted.values())
++        x = np.array(list(patterns_sorted.keys()))
++        y = np.array(list(patterns_sorted.values()))
+         A = np.vstack([x, np.ones(len(x))]).T
+         m, c = np.linalg.lstsq(A, y)[0]
+         pos = -c / m % 360
+@@ -136,7 +136,7 @@ class Autocheck(Calibration):
+         image = self.image_capture.capture_pattern()
+         corners = self.image_detection.detect_corners(image)
+         self.image_capture.flush_laser()
+-        for i in xrange(2):
++        for i in range(2):
+             if not self._is_calibrating:
+                 raise CalibrationCancel()
+             image = self.image_capture.capture_laser(i)
+diff -uprN build_orig/src/horus/engine/calibration/calibration_data.py build_custom/src/horus/engine/calibration/calibration_data.py
+--- build_orig/src/horus/engine/calibration/calibration_data.py	2021-06-09 09:50:01.000000000 +0900
++++ build_custom/src/horus/engine/calibration/calibration_data.py	2021-06-09 10:44:55.270775600 +0900
+@@ -5,8 +5,7 @@ __author__ = 'Jesús Arroyo Torrens <jes
+ __copyright__ = 'Copyright (C) 2014-2016 Mundo Reader S.L.'
+ __license__ = 'GNU General Public License v2 http://www.gnu.org/licenses/gpl2.html'
+ 
+-
+-import md5
++from hashlib import md5
+ import cv2
+ import numpy as np
+ 
+@@ -80,7 +79,7 @@ class CalibrationData(object):
+             self._dist_camera_matrix, self._roi = cv2.getOptimalNewCameraMatrix(
+                 self._camera_matrix, self._distortion_vector,
+                 (int(self.width), int(self.height)), alpha=1)
+-            self._md5_hash = md5.new()
++            self._md5_hash = md5()
+             self._md5_hash.update(self._camera_matrix)
+             self._md5_hash.update(self._distortion_vector)
+             self._md5_hash = self._md5_hash.hexdigest()
+diff -uprN build_orig/src/horus/engine/calibration/camera_intrinsics.py build_custom/src/horus/engine/calibration/camera_intrinsics.py
+--- build_orig/src/horus/engine/calibration/camera_intrinsics.py	2021-06-09 09:50:02.000000000 +0900
++++ build_custom/src/horus/engine/calibration/camera_intrinsics.py	2019-04-27 14:55:06.927097000 +0900
+@@ -68,7 +68,7 @@ class CameraIntrinsics(Calibration):
+ 
+         if ret:
+             # Compute calibration error
+-            for i in xrange(len(self.object_points)):
++            for i in range(len(self.object_points)):
+                 imgpoints2, _ = cv2.projectPoints(
+                     self.object_points[i], rvecs[i], tvecs[i], cmat, dvec)
+                 error += cv2.norm(self.image_points[i], imgpoints2, cv2.NORM_L2) / len(imgpoints2)
+diff -uprN build_orig/src/horus/engine/calibration/combo_calibration.py build_custom/src/horus/engine/calibration/combo_calibration.py
+--- build_orig/src/horus/engine/calibration/combo_calibration.py	2021-06-09 09:50:02.000000000 +0900
++++ build_custom/src/horus/engine/calibration/combo_calibration.py	2019-04-27 14:55:07.080909300 +0900
+@@ -52,7 +52,7 @@ class ComboCalibration(MovingCalibration
+             if (angle > 65 and angle < 115):
+                 self.image_capture.flush_laser()
+                 self.image_capture.flush_laser()
+-                for i in xrange(2):
++                for i in range(2):
+                     image = self.image_capture.capture_laser(i)
+                     image = self.image_detection.pattern_mask(image, corners)
+                     self.image = image
+@@ -83,7 +83,7 @@ class ComboCalibration(MovingCalibration
+ 
+         # Laser triangulation
+         # Save point clouds
+-        for i in xrange(2):
++        for i in range(2):
+             laser_triangulation.save_point_cloud('PC' + str(i) + '.ply', self._point_cloud[i])
+ 
+         self.distance = [None, None]
+@@ -91,7 +91,7 @@ class ComboCalibration(MovingCalibration
+         self.std = [None, None]
+ 
+         # Compute planes
+-        for i in xrange(2):
++        for i in range(2):
+             if self._is_calibrating:
+                 plane = laser_triangulation.compute_plane(i, self._point_cloud[i])
+                 self.distance[i], self.normal[i], self.std[i] = plane
+@@ -101,7 +101,7 @@ class ComboCalibration(MovingCalibration
+         self.x = np.array(self.x)
+         self.y = np.array(self.y)
+         self.z = np.array(self.z)
+-        points = zip(self.x, self.y, self.z)
++        points = list(zip(self.x, self.y, self.z))
+ 
+         if len(points) > 4:
+             # Fitting a plane
+@@ -148,7 +148,7 @@ class ComboCalibration(MovingCalibration
+         return response
+ 
+     def accept(self):
+-        for i in xrange(2):
++        for i in range(2):
+             self.calibration_data.laser_planes[i].distance = self.distance[i]
+             self.calibration_data.laser_planes[i].normal = self.normal[i]
+         self.calibration_data.platform_rotation = self.R
+diff -uprN build_orig/src/horus/engine/calibration/laser_triangulation.py build_custom/src/horus/engine/calibration/laser_triangulation.py
+--- build_orig/src/horus/engine/calibration/laser_triangulation.py	2021-06-09 09:50:04.000000000 +0900
++++ build_custom/src/horus/engine/calibration/laser_triangulation.py	2021-06-09 14:17:51.355679100 +0900
+@@ -52,7 +52,7 @@ class LaserTriangulation(MovingCalibrati
+             self.image_capture.flush_laser()
+             if plane is not None:
+                 distance, normal, corners = plane
+-                for i in xrange(2):
++                for i in range(2):
+                     image = self.image_capture.capture_laser(i)
+                     image = self.image_detection.pattern_mask(image, corners)
+                     self.image = image
+@@ -74,7 +74,7 @@ class LaserTriangulation(MovingCalibrati
+         self.image_capture.stream = True
+ 
+         # Save point clouds
+-        for i in xrange(2):
++        for i in range(2):
+             save_point_cloud('PC' + str(i) + '.ply', self._point_cloud[i])
+ 
+         self.distance = [None, None]
+@@ -82,7 +82,7 @@ class LaserTriangulation(MovingCalibrati
+         self.std = [None, None]
+ 
+         # Compute planes
+-        for i in xrange(2):
++        for i in range(2):
+             if self._is_calibrating:
+                 plane = compute_plane(i, self._point_cloud[i])
+                 self.distance[i], self.normal[i], self.std[i] = plane
+@@ -103,7 +103,7 @@ class LaserTriangulation(MovingCalibrati
+         return response
+ 
+     def accept(self):
+-        for i in xrange(2):
++        for i in range(2):
+             self.calibration_data.laser_planes[i].distance = self.distance[i]
+             self.calibration_data.laser_planes[i].normal = self.normal[i]
+ 
+@@ -161,7 +161,7 @@ def ransac(data, model_class, min_sample
+     best_inlier_num = 0
+     best_inliers = None
+     data_idx = np.arange(data.shape[0])
+-    for _ in xrange(max_trials):
++    for _ in range(max_trials):
+         sample = data[np.random.randint(0, data.shape[0], 3)]
+         if model_class.is_degenerate(sample):
+             continue
+@@ -198,6 +198,6 @@ def save_point_cloud_stream(stream, poin
+     frame += "element face 0\n"
+     frame += "property list uchar int vertex_indices\n"
+     frame += "end_header\n"
++    stream.write(bytes(frame, 'utf-8'))
+     for point in point_cloud:
+-        frame += struct.pack("<fffBBB", point[0], point[1], point[2], 255, 0, 0)
+-    stream.write(frame)
++        stream.write(struct.pack("<fffBBB", point[0], point[1], point[2], 255, 0, 0))
+diff -uprN build_orig/src/horus/engine/calibration/platform_extrinsics.py build_custom/src/horus/engine/calibration/platform_extrinsics.py
+--- build_orig/src/horus/engine/calibration/platform_extrinsics.py	2021-06-09 09:50:06.000000000 +0900
++++ build_custom/src/horus/engine/calibration/platform_extrinsics.py	2019-04-27 14:55:07.497916400 +0900
+@@ -74,7 +74,7 @@ class PlatformExtrinsics(MovingCalibrati
+         self.x = np.array(self.x)
+         self.y = np.array(self.y)
+         self.z = np.array(self.z)
+-        points = zip(self.x, self.y, self.z)
++        points = list(zip(self.x, self.y, self.z))
+ 
+         if len(points) > 4:
+             # Fitting a plane
+diff -uprN build_orig/src/horus/engine/driver/board.py build_custom/src/horus/engine/driver/board.py
+--- build_orig/src/horus/engine/driver/board.py	2021-06-09 09:50:07.000000000 +0900
++++ build_custom/src/horus/engine/driver/board.py	2021-06-05 05:52:13.888810800 +0900
+@@ -77,7 +77,7 @@ class Board(object):
+             self._serial_port = serial.Serial(self.serial_name, self.baud_rate, timeout=2)
+             if self._serial_port.isOpen():
+                 self._reset()  # Force Reset and flush
+-                version = self._serial_port.readline()
++                version = self._serial_port.readline().decode('utf-8')
+                 if "Horus 0.1 ['$' for help]" in version:
+                     raise OldFirmware()
+                 elif "Horus 0.2 ['$' for help]" in version:
+@@ -174,11 +174,11 @@ class Board(object):
+                 self._send_command("M70T" + str(index + 1))
+ 
+     def lasers_on(self):
+-        for i in xrange(self._laser_number):
++        for i in range(self._laser_number):
+             self.laser_on(i)
+ 
+     def lasers_off(self):
+-        for i in xrange(self._laser_number):
++        for i in range(self._laser_number):
+             self.laser_off(i)
+ 
+     def ldr_sensor(self, pin):
+@@ -203,7 +203,7 @@ class Board(object):
+                 try:
+                     self._serial_port.flushInput()
+                     self._serial_port.flushOutput()
+-                    self._serial_port.write(req + "\r\n")
++                    self._serial_port.write(bytes(req + "\r\n", 'UTF-8'))
+                     while req != '~' and req != '!' and ret == '':
+                         ret = self.read(read_lines)
+                         time.sleep(0.01)
+@@ -219,9 +219,9 @@ class Board(object):
+ 
+     def read(self, read_lines=False):
+         if read_lines:
+-            return ''.join(self._serial_port.readlines())
++            return ''.join(self._serial_port.readlines().decode('utf-8'))
+         else:
+-            return ''.join(self._serial_port.readline())
++            return ''.join(self._serial_port.readline().decode('utf-8'))
+ 
+     def _success(self):
+         self._tries = 0
+@@ -241,21 +241,21 @@ class Board(object):
+     def _reset(self):
+         self._serial_port.flushInput()
+         self._serial_port.flushOutput()
+-        self._serial_port.write("\x18\r\n")  # Ctrl-x
+-        self._serial_port.readline()
++        self._serial_port.write(b"\x18\r\n")  # Ctrl-x
++        self._serial_port.readline().decode('utf-8')
+ 
+     def get_serial_list(self):
+         """Obtain list of serial devices"""
+         baselist = []
+         if system == 'Windows':
+-            import _winreg
++            import winreg
+             try:
+-                key = _winreg.OpenKey(
+-                    _winreg.HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM")
++                key = winreg.OpenKey(
++                    winreg.HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM")
+                 i = 0
+                 while True:
+                     try:
+-                        values = _winreg.EnumValue(key, i)
++                        values = winreg.EnumValue(key, i)
+                     except:
+                         return baselist
+                     if 'USBSER' in values[0] or \
+diff -uprN build_orig/src/horus/engine/driver/camera.py build_custom/src/horus/engine/driver/camera.py
+--- build_orig/src/horus/engine/driver/camera.py	2021-06-09 09:50:07.000000000 +0900
++++ build_custom/src/horus/engine/driver/camera.py	2021-06-09 13:45:54.885473800 +0900
+@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
+ system = platform.system()
+ 
+ if system == 'Darwin':
+-    import uvc
+-    from uvc.mac import *
++    from . import uvc
++    from .uvc.mac import *
+ 
+ 
+ class WrongCamera(Exception):
+@@ -111,7 +111,11 @@ class Camera(object):
+                     self.controls = uvc.mac.Controls(device.uId)
+         if self._capture is not None:
+             self._capture.release()
+-        self._capture = cv2.VideoCapture(self.camera_id)
++#        self._capture = cv2.VideoCapture(self.camera_id)
++        if system == 'Windows':
++            self._capture = cv2.VideoCapture(self.camera_id + cv2.CAP_DSHOW)
++        else:
++            self._capture = cv2.VideoCapture(self.camera_id)
+         time.sleep(0.2)
+         if not self._capture.isOpened():
+             time.sleep(1)
+@@ -196,7 +200,7 @@ class Camera(object):
+                         e = time.time()
+                 else:
+                     if flush > 0:
+-                        for i in xrange(flush):
++                        for i in range(flush):
+                             self._capture.read()
+                             # Note: Windows needs read() to perform
+                             #       the flush instead of grab()
+@@ -242,7 +246,7 @@ class Camera(object):
+                     ctl.set_val(self._line(value, 0, self._max_brightness, ctl.min, ctl.max))
+                 else:
+                     value = int(value) / self._max_brightness
+-                    ret = self._capture.set(cv2.cv.CV_CAP_PROP_BRIGHTNESS, value)
++                    ret = self._capture.set(cv2.CAP_PROP_BRIGHTNESS, value)
+                     if system == 'Linux' and ret:
+                         raise InputOutputError()
+                 self._updating = False
+@@ -257,7 +261,7 @@ class Camera(object):
+                     ctl.set_val(self._line(value, 0, self._max_contrast, ctl.min, ctl.max))
+                 else:
+                     value = int(value) / self._max_contrast
+-                    ret = self._capture.set(cv2.cv.CV_CAP_PROP_CONTRAST, value)
++                    ret = self._capture.set(cv2.CAP_PROP_CONTRAST, value)
+                     if system == 'Linux' and ret:
+                         raise InputOutputError()
+                 self._updating = False
+@@ -272,7 +276,7 @@ class Camera(object):
+                     ctl.set_val(self._line(value, 0, self._max_saturation, ctl.min, ctl.max))
+                 else:
+                     value = int(value) / self._max_saturation
+-                    ret = self._capture.set(cv2.cv.CV_CAP_PROP_SATURATION, value)
++                    ret = self._capture.set(cv2.CAP_PROP_SATURATION, value)
+                     if system == 'Linux' and ret:
+                         raise InputOutputError()
+                 self._updating = False
+@@ -291,10 +295,10 @@ class Camera(object):
+                     ctl.set_val(value)
+                 elif system == 'Windows':
+                     value = int(round(-math.log(value) / math.log(2)))
+-                    self._capture.set(cv2.cv.CV_CAP_PROP_EXPOSURE, value)
++                    self._capture.set(cv2.CAP_PROP_EXPOSURE, value)
+                 else:
+                     value = int(value) / self._max_exposure
+-                    ret = self._capture.set(cv2.cv.CV_CAP_PROP_EXPOSURE, value)
++                    ret = self._capture.set(cv2.CAP_PROP_EXPOSURE, value)
+                     if system == 'Linux' and ret:
+                         raise InputOutputError()
+                 self._updating = False
+@@ -313,7 +317,7 @@ class Camera(object):
+             if self._frame_rate != value:
+                 self._frame_rate = value
+                 self._updating = True
+-                self._capture.set(cv2.cv.CV_CAP_PROP_FPS, value)
++                self._capture.set(cv2.CAP_PROP_FPS, value)
+                 self._updating = False
+ 
+     def set_resolution(self, width, height):
+@@ -326,14 +330,14 @@ class Camera(object):
+                 self._updating = False
+ 
+     def _set_width(self, value):
+-        self._capture.set(cv2.cv.CV_CAP_PROP_FRAME_WIDTH, value)
++        self._capture.set(cv2.CAP_PROP_FRAME_WIDTH, value)
+ 
+     def _set_height(self, value):
+-        self._capture.set(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT, value)
++        self._capture.set(cv2.CAP_PROP_FRAME_HEIGHT, value)
+ 
+     def _update_resolution(self):
+-        self._width = int(self._capture.get(cv2.cv.CV_CAP_PROP_FRAME_WIDTH))
+-        self._height = int(self._capture.get(cv2.cv.CV_CAP_PROP_FRAME_HEIGHT))
++        self._width = int(self._capture.get(cv2.CAP_PROP_FRAME_WIDTH))
++        self._height = int(self._capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+ 
+     def get_brightness(self):
+         if self._is_connected:
+@@ -341,7 +345,7 @@ class Camera(object):
+                 ctl = self.controls['UVCC_REQ_BRIGHTNESS_ABS']
+                 value = ctl.get_val()
+             else:
+-                value = self._capture.get(cv2.cv.CV_CAP_PROP_BRIGHTNESS)
++                value = self._capture.get(cv2.CAP_PROP_BRIGHTNESS)
+                 value *= self._max_brightness
+             return value
+ 
+@@ -352,10 +356,10 @@ class Camera(object):
+                 value = ctl.get_val()
+                 value /= self._rel_exposure
+             elif system == 'Windows':
+-                value = self._capture.get(cv2.cv.CV_CAP_PROP_EXPOSURE)
++                value = self._capture.get(cv2.CAP_PROP_EXPOSURE)
+                 value = 2 ** -value
+             else:
+-                value = self._capture.get(cv2.cv.CV_CAP_PROP_EXPOSURE)
++                value = self._capture.get(cv2.CAP_PROP_EXPOSURE)
+                 value *= self._max_exposure
+             return value
+ 
+@@ -387,7 +391,7 @@ class Camera(object):
+         return ret
+ 
+     def _count_cameras(self):
+-        for i in xrange(5):
++        for i in range(5):
+             cap = cv2.VideoCapture(i)
+             res = not cap.isOpened()
+             cap.release()
+@@ -400,7 +404,7 @@ class Camera(object):
+         if system == 'Windows':
+             if not self._is_connected:
+                 count = self._count_cameras()
+-                for i in xrange(count):
++                for i in range(count):
+                     baselist.append(str(i))
+                 self._video_list = baselist
+         elif system == 'Darwin':
+diff -uprN build_orig/src/horus/engine/driver/uvc/mac/cf_string.py build_custom/src/horus/engine/driver/uvc/mac/cf_string.py
+--- build_orig/src/horus/engine/driver/uvc/mac/cf_string.py	2021-06-09 09:50:08.000000000 +0900
++++ build_custom/src/horus/engine/driver/uvc/mac/cf_string.py	2019-04-27 14:55:09.473572000 +0900
+@@ -71,4 +71,4 @@ def release(cfstring):
+ 
+ if __name__ == '__main__':
+     cf_pointer = CFSTR("THIS is a Test")
+-    print cfstring_to_string(cf_pointer)
++    print(cfstring_to_string(cf_pointer))
+diff -uprN build_orig/src/horus/engine/driver/uvc/mac/__init__.py build_custom/src/horus/engine/driver/uvc/mac/__init__.py
+--- build_orig/src/horus/engine/driver/uvc/mac/__init__.py	2021-06-09 09:50:08.000000000 +0900
++++ build_custom/src/horus/engine/driver/uvc/mac/__init__.py	2019-04-27 14:55:09.768504500 +0900
+@@ -23,7 +23,7 @@ Three classes:
+     Control is the actual Control with methods for getting and setting them.
+ """
+ import sys
+-from raw import *
++from .raw import *
+ 
+ #logging
+ import logging
+@@ -119,12 +119,12 @@ class Controls(dict):
+             self[c] = Control(c,i,self.handle)
+ 
+     def update_from_device(self):
+-        for c in self.itervalues():
++        for c in self.values():
+             if c.flags == "active":
+                 c.value = c.get_val_from_device()
+ 
+     def load_defaults(self):
+-        for c in self.itervalues():
++        for c in self.values():
+             if c.flags == "active" and c.default is not None:
+                 c.set_val(c.default)
+ 
+diff -uprN build_orig/src/horus/engine/driver/uvc/mac/raw.py build_custom/src/horus/engine/driver/uvc/mac/raw.py
+--- build_orig/src/horus/engine/driver/uvc/mac/raw.py	2021-06-09 09:50:10.000000000 +0900
++++ build_custom/src/horus/engine/driver/uvc/mac/raw.py	2019-04-27 14:55:09.659126600 +0900
+@@ -15,7 +15,7 @@
+ '''
+ 
+ from ctypes import *
+-from cf_string import CFSTR, cfstring_to_string_release
++from .cf_string import CFSTR, cfstring_to_string_release
+ import os,sys
+ 
+ #logging
+@@ -98,7 +98,7 @@ uvcc_controls = (
+ '__UVCC_REQ_OUT_OF_RANGE'
+ 
+                 )
+-control_dict = dict(zip(uvcc_controls,range(len(uvcc_controls))))
++control_dict = dict(list(zip(uvcc_controls,list(range(len(uvcc_controls))))))
+ 
+ 
+ 
+@@ -249,15 +249,15 @@ def uvccGetVal(control,camera):
+ if __name__ == '__main__':
+     uvccInit()
+     cam_n,cam_list = uvccGetCamList()
+-    print "detected cameras:",cam_n
++    print("detected cameras:",cam_n)
+     for i in range(cam_n):
+-        print "idVendor",hex(cam_list[i].contents.devDesc.idVendor)
+-        print "idProduct",hex(cam_list[i].contents.devDesc.idProduct)
+-        print "Location", cam_list[i].contents.idLocation
+-        print "Product Name:",uvccCamProduct(cam_list[i].contents)
+-        print "Product Serial:",uvccCamSerialNumber(cam_list[i].contents)
+-        print "Manufacturer:", uvccCamManufacturer(cam_list[i].contents)
+-        print "uId:",uvccCamQTUniqueID(cam_list[i].contents)
++        print("idVendor",hex(cam_list[i].contents.devDesc.idVendor))
++        print("idProduct",hex(cam_list[i].contents.devDesc.idProduct))
++        print("Location", cam_list[i].contents.idLocation)
++        print("Product Name:",uvccCamProduct(cam_list[i].contents))
++        print("Product Serial:",uvccCamSerialNumber(cam_list[i].contents))
++        print("Manufacturer:", uvccCamManufacturer(cam_list[i].contents))
++        print("uId:",uvccCamQTUniqueID(cam_list[i].contents))
+         uid = uvccCamQTUniqueID(cam_list[i].contents)
+         # manually construct uId: (it looks similar to this: 0x1a11000005ac8510)
+         # uid = "0x%08x%04x%04x" %(cam_list[i].contents.idLocation,cam_list[i].contents.mId.contents.idVendor,cam_list[i].contents.mId.contents.idProduct)
+@@ -270,9 +270,9 @@ if __name__ == '__main__':
+     # # cam = uvccGetCamsWithModelID(mid)
+     if cam:
+         uvccOpenCam(cam)
+-        print "Location", cam.contents.idLocation
+-        print "Product Name:",uvccCamProduct(cam)
+-        print uvccRequestInfo("UVCC_REQ_EXPOSURE_ABS",cam)
++        print("Location", cam.contents.idLocation)
++        print("Product Name:",uvccCamProduct(cam))
++        print(uvccRequestInfo("UVCC_REQ_EXPOSURE_ABS",cam))
+         # val =  uvccGetVal("UVCC_REQ_BRIGHTNESS_ABS",cam)
+         # print uvccSetVal(val-1,"UVCC_REQ_BRIGHTNESS_ABS",cam)
+         uvccCloseCam(cam)
+diff -uprN build_orig/src/horus/engine/scan/ciclop_scan.py build_custom/src/horus/engine/scan/ciclop_scan.py
+--- build_orig/src/horus/engine/scan/ciclop_scan.py	2021-06-09 09:50:10.000000000 +0900
++++ build_custom/src/horus/engine/scan/ciclop_scan.py	2019-04-27 14:55:09.286068000 +0900
+@@ -6,7 +6,7 @@ __copyright__ = 'Copyright (C) 2014-2016
+ __license__ = 'GNU General Public License v2 http://www.gnu.org/licenses/gpl2.html'
+ 
+ import time
+-import Queue
++import queue
+ import numpy as np
+ import datetime
+ 
+@@ -54,7 +54,7 @@ class CiclopScan(Scan):
+         self._debug = False
+         self._bicolor = False
+         self._scan_sleep = 0.05
+-        self._captures_queue = Queue.Queue(10)
++        self._captures_queue = queue.Queue(10)
+         self.point_cloud_callback = None
+ 
+     def set_capture_texture(self, value):
+@@ -96,10 +96,10 @@ class CiclopScan(Scan):
+         logger.info("Start scan")
+         if self._debug and system == 'Linux':
+             string_time = str(datetime.datetime.now())[:-3] + " - "
+-            print string_time + " elapsed progress: 0 %"
+-            print string_time + " elapsed time: 0' 0\""
+-            print string_time + " elapsed angle: 0º"
+-            print string_time + " capture: 0 ms"
++            print(string_time + " elapsed progress: 0 %")
++            print(string_time + " elapsed time: 0' 0\"")
++            print(string_time + " elapsed angle: 0º")
++            print(string_time + " capture: 0 ms")
+ 
+         # Setup scanner
+         self.driver.board.lasers_off()
+@@ -155,15 +155,15 @@ class CiclopScan(Scan):
+ 
+                     if self._debug and system == 'Linux':
+                         # Cursor up + remove lines
+-                        print "\x1b[1A\x1b[1A\x1b[1A\x1b[1A\x1b[2K\x1b[1A"
+-                        print string_time + " elapsed progress: {0} %".format(
+-                            int(self._theta / 3.6))
+-                        print string_time + " elapsed time: {0}".format(
+-                            time.strftime("%M' %S\"", time.gmtime(self._end - self._begin)))
+-                        print string_time + " elapsed angle: {0}º".format(
+-                            float(self._theta))
+-                        print string_time + " capture: {0} ms".format(
+-                            int((self._end - begin) * 1000))
++                        print("\x1b[1A\x1b[1A\x1b[1A\x1b[1A\x1b[2K\x1b[1A")
++                        print(string_time + " elapsed progress: {0} %".format(
++                            int(self._theta / 3.6)))
++                        print(string_time + " elapsed time: {0}".format(
++                            time.strftime("%M' %S\"", time.gmtime(self._end - self._begin))))
++                        print(string_time + " elapsed angle: {0}º".format(
++                            float(self._theta)))
++                        print(string_time + " capture: {0} ms".format(
++                            int((self._end - begin) * 1000)))
+             # Sleep
+             time.sleep(self._scan_sleep)
+ 
+@@ -191,7 +191,7 @@ class CiclopScan(Scan):
+         if self.laser[0] and self.laser[1]:
+             capture.lasers = self.image_capture.capture_lasers()
+         else:
+-            for i in xrange(2):
++            for i in range(2):
+                 if self.laser[i]:
+                     capture.lasers[i] = self.image_capture.capture_laser(i)
+ 
+@@ -252,7 +252,7 @@ class CiclopScan(Scan):
+ 
+         # begin = time.time()
+ 
+-        for i in xrange(2):
++        for i in range(2):
+             if capture.lasers[i] is not None:
+                 image = capture.lasers[i]
+                 self.image = image
+diff -uprN build_orig/src/horus/engine/scan/current_video.py build_custom/src/horus/engine/scan/current_video.py
+--- build_orig/src/horus/engine/scan/current_video.py	2021-06-09 09:50:10.000000000 +0900
++++ build_custom/src/horus/engine/scan/current_video.py	2019-04-27 14:55:09.348568700 +0900
+@@ -38,7 +38,7 @@ class CurrentVideo(object):
+     def set_line(self, points, image):
+         images = [None, None]
+         if image is not None:
+-            for i in xrange(2):
++            for i in range(2):
+                 if points[i]:
+                     images[i] = self._compute_line_image(points[i], image)
+             image = self._combine_images(images)
+diff -uprN build_orig/src/horus/gui/main.py build_custom/src/horus/gui/main.py
+--- build_orig/src/horus/gui/main.py	2021-06-09 09:50:12.000000000 +0900
++++ build_custom/src/horus/gui/main.py	2019-04-27 14:55:04.410405300 +0900
+@@ -77,7 +77,7 @@ class MainWindow(wx.Frame):
+         sizer.Add(self.toolbar, 0, wx.ALL | wx.EXPAND)
+         self.Bind(wx.EVT_COMBOBOX, self.on_combo_box_selected, self.toolbar.combo)
+ 
+-        for workbench in self.workbench.values():
++        for workbench in list(self.workbench.values()):
+             self.toolbar.combo.Append(workbench.name)
+             sizer.Add(workbench, 1, wx.ALL | wx.EXPAND)
+         name = self.workbench[profile.settings['workbench']].name
+@@ -132,7 +132,7 @@ class MainWindow(wx.Frame):
+         self.menu_scanning_panel = self.menu_scanning.AppendCheckItem(wx.NewId(), _("Panel"))
+         self.menu_scanning_video = self.menu_scanning.AppendCheckItem(wx.NewId(), _("Video"))
+         self.menu_scanning_scene = self.menu_scanning.AppendCheckItem(wx.NewId(), _("Scene"))
+-        self.menu_view.AppendMenu(wx.NewId(), _("Scanning"), self.menu_scanning)
++        self.menu_view.Append(wx.NewId(), _("Scanning"), self.menu_scanning)
+         self.menu_mode_advanced = self.menu_view.AppendCheckItem(wx.NewId(), _("Advanced mode"))
+         self.menu_bar.Append(self.menu_view, _("View"))
+ 
+@@ -191,9 +191,9 @@ class MainWindow(wx.Frame):
+         last_file = os.path.split(profile.settings['last_file'])[0]
+         dlg = wx.FileDialog(
+             self, _("Open 3D model"), last_file, style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
+-        wildcard_list = ';'.join(map(lambda s: '*' + s, mesh_loader.load_supported_extensions()))
++        wildcard_list = ';'.join(['*' + s for s in mesh_loader.load_supported_extensions()])
+         wildcard_filter = "All (%s)|%s;%s" % (wildcard_list, wildcard_list, wildcard_list.upper())
+-        wildcard_list = ';'.join(map(lambda s: '*' + s, mesh_loader.load_supported_extensions()))
++        wildcard_list = ';'.join(['*' + s for s in mesh_loader.load_supported_extensions()])
+         wildcard_filter += "|Mesh files (%s)|%s;%s" % (wildcard_list, wildcard_list,
+                                                        wildcard_list.upper())
+         dlg.SetWildcard(wildcard_filter)
+@@ -211,7 +211,7 @@ class MainWindow(wx.Frame):
+         dlg = wx.FileDialog(self, _("Save 3D model"), os.path.split(
+             profile.settings['last_file'])[0], style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+         file_extensions = mesh_loader.save_supported_extensions()
+-        wildcard_list = ';'.join(map(lambda s: '*' + s, file_extensions))
++        wildcard_list = ';'.join(['*' + s for s in file_extensions])
+         wildcard_filter = "Mesh files (%s)|%s;%s" % (wildcard_list, wildcard_list,
+                                                      wildcard_list.upper())
+         dlg.SetWildcard(wildcard_filter)
+@@ -323,12 +323,12 @@ class MainWindow(wx.Frame):
+         if status:
+             self.toolbar.toolbar.Enable()
+             self.toolbar.combo.Enable()
+-            for i in xrange(self.menu_bar.GetMenuCount()):
++            for i in range(self.menu_bar.GetMenuCount()):
+                 self.menu_bar.EnableTop(i, True)
+         else:
+             self.toolbar.toolbar.Disable()
+             self.toolbar.combo.Disable()
+-            for i in xrange(self.menu_bar.GetMenuCount()):
++            for i in range(self.menu_bar.GetMenuCount()):
+                 self.menu_bar.EnableTop(i, False)
+ 
+     def append_last_file(self, last_file):
+@@ -427,12 +427,12 @@ class MainWindow(wx.Frame):
+         self.Layout()
+ 
+     def on_connect(self):
+-        for workbench in self.workbench.values():
++        for workbench in list(self.workbench.values()):
+             workbench.enable_content()
+         self.workbench[profile.settings['workbench']].on_connect()
+ 
+     def on_disconnect(self):
+-        for workbench in self.workbench.values():
++        for workbench in list(self.workbench.values()):
+             workbench.on_disconnect()
+ 
+     def on_combo_box_selected(self, event):
+@@ -442,18 +442,18 @@ class MainWindow(wx.Frame):
+         self.wait_cursor = wx.BusyCursor()
+         self.toolbar.combo.SetValue(name)
+         if sys.is_windows():
+-            for key, wb in self.workbench.iteritems():
++            for key, wb in self.workbench.items():
+                 if wb.name == name:
+                     wb.Show()
+                     profile.settings['workbench'] = key
+-            for key, wb in self.workbench.iteritems():
++            for key, wb in self.workbench.items():
+                 if wb.name != name:
+                     wb.Hide()
+         else:
+-            for key, wb in self.workbench.iteritems():
++            for key, wb in self.workbench.items():
+                 if wb.name != name:
+                     wb.Hide()
+-            for key, wb in self.workbench.iteritems():
++            for key, wb in self.workbench.items():
+                 if wb.name == name:
+                     wb.Show()
+                     profile.settings['workbench'] = key
+@@ -472,15 +472,15 @@ class MainWindow(wx.Frame):
+         info = wx.AboutDialogInfo()
+         icon = wx.Icon(resources.get_path_for_image("horus.ico"), wx.BITMAP_TYPE_ICO)
+         info.SetIcon(icon)
+-        info.SetName(u'Horus')
++        info.SetName('Horus')
+         info.SetVersion(__version__)
+         tech_description = _('Horus is an Open Source 3D Scanner manager')
+         tech_description += '\nVersion: ' + __version__
+         tech_description += '\nDatetime: ' + __datetime__
+         tech_description += '\nCommit: ' + __commit__
+         info.SetDescription(tech_description)
+-        info.SetCopyright(u'(C) 2014-2016 Mundo Reader S.L.')
+-        info.SetWebSite(u'http://www.bq.com')
++        info.SetCopyright('(C) 2014-2016 Mundo Reader S.L.')
++        info.SetWebSite('http://www.bq.com')
+         info.SetLicence("Horus is free software; you can redistribute it and/or modify it\n"
+                         "under the terms of the GNU General Public License as published by\n"
+                         "the Free Software Foundation; either version 2 of the License,\n"
+@@ -492,10 +492,10 @@ class MainWindow(wx.Frame):
+                         "received a copy of the GNU General Public License along with\n"
+                         "File Hunter; if not, write to the Free Software Foundation,\n"
+                         "Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA")
+-        info.AddDeveloper(u'Jesús Arroyo, Irene Sanz, Jorge Robles')
+-        info.AddDocWriter(u'Jesús Arroyo, Ángel Larrañaga')
+-        info.AddArtist(u'Nestor Toribio')
+-        info.AddTranslator(u'Jesús Arroyo, Irene Sanz, Alexandre Galode, Natasha da Silva, '
++        info.AddDeveloper('Jesús Arroyo, Irene Sanz, Jorge Robles')
++        info.AddDocWriter('Jesús Arroyo, Ángel Larrañaga')
++        info.AddArtist('Nestor Toribio')
++        info.AddTranslator('Jesús Arroyo, Irene Sanz, Alexandre Galode, Natasha da Silva, '
+                            'Camille Montgolfier, Markus Hoedl, Andrea Fantini, Maria Albuquerque, '
+                            'Meike Schirmeister')
+         wx.AboutBox(info)
+@@ -541,7 +541,7 @@ class MainWindow(wx.Frame):
+         dlg.Destroy()
+ 
+     def update_profile_to_all_controls(self):
+-        for _, w in self.workbench.iteritems():
++        for _, w in self.workbench.items():
+             w.update_controls()
+         self.workbench[profile.settings['workbench']].update_controls()
+ 
+@@ -596,7 +596,7 @@ class MainWindow(wx.Frame):
+         current_video_id = profile.settings['camera_id']
+         if len(video_list) > 0:
+             if current_video_id not in video_list:
+-                profile.settings['camera_id'] = unicode(video_list[0])
++                profile.settings['camera_id'] = str(video_list[0])
+ 
+         if len(profile.settings['camera_id']):
+             driver.camera.camera_id = int(profile.settings['camera_id'][-1:])
+diff -uprN build_orig/src/horus/gui/splash.py build_custom/src/horus/gui/splash.py
+--- build_orig/src/horus/gui/splash.py	2021-06-09 09:50:12.000000000 +0900
++++ build_custom/src/horus/gui/splash.py	2019-04-23 09:30:11.000000000 +0900
+@@ -8,17 +8,18 @@ __license__ = 'GNU General Public Licens
+ 
+ import time
+ import wx._core
++import wx.adv
+ 
+ from horus.util.resources import get_path_for_image
+ 
+ 
+-class SplashScreen(wx.SplashScreen):
++class SplashScreen(wx.adv.SplashScreen):
+ 
+     def __init__(self, callback):
+         self.callback = callback
+ 
+         bitmap = wx.Image(get_path_for_image("splash.png"), wx.BITMAP_TYPE_PNG).ConvertToBitmap()
+-        super(SplashScreen, self).__init__(bitmap, wx.SPLASH_CENTRE_ON_SCREEN, 0, None)
++        super(SplashScreen, self).__init__(bitmap, wx.adv.SPLASH_CENTRE_ON_SCREEN, 0, None)
+         # TODO: fix in wx.SplashScreen class
+         time.sleep(0.03)
+         wx.CallAfter(self.do_callback)
+diff -uprN build_orig/src/horus/gui/util/custom_panels.py build_custom/src/horus/gui/util/custom_panels.py
+--- build_orig/src/horus/gui/util/custom_panels.py	2021-06-09 09:50:12.000000000 +0900
++++ build_custom/src/horus/gui/util/custom_panels.py	2020-01-11 22:23:56.588444900 +0900
+@@ -31,37 +31,37 @@ class ExpandableCollection(wx.Panel):
+         self.vbox.Add(panel, 0, wx.ALL ^ wx.TOP | wx.EXPAND, 3)
+ 
+     def init_panels_layout(self):
+-        values = self.expandable_panels.values()
++        values = list(self.expandable_panels.values())
+         if len(values) > 0:
+             self._expand_callback(values[0])
+ 
+     def _expand_callback(self, selected_panel):
+         if sys.is_windows():
+             selected_panel.show_content()
+-            for panel in self.expandable_panels.values():
++            for panel in list(self.expandable_panels.values()):
+                 if panel is not selected_panel:
+                     panel.hide_content()
+         else:
+-            for panel in self.expandable_panels.values():
++            for panel in list(self.expandable_panels.values()):
+                 if panel is not selected_panel:
+                     panel.hide_content()
+             selected_panel.show_content()
+ 
+     # Engine callbacks
+     def update_callbacks(self):
+-        for panel in self.expandable_panels.values():
++        for panel in list(self.expandable_panels.values()):
+             panel.content.update_callbacks()
+ 
+     def enable_content(self):
+-        for panel in self.expandable_panels.values():
++        for panel in list(self.expandable_panels.values()):
+             panel.content.Enable()
+ 
+     def disable_content(self):
+-        for panel in self.expandable_panels.values():
++        for panel in list(self.expandable_panels.values()):
+             panel.content.Disable()
+ 
+     def update_from_profile(self):
+-        for panel in self.expandable_panels.values():
++        for panel in list(self.expandable_panels.values()):
+             panel.enable_restore(True)
+             panel.content.update_from_profile()
+ 
+@@ -225,8 +225,8 @@ class TitleText(wx.Panel):
+         self.line = wx.StaticLine(self)
+ 
+         if hand_cursor:
+-            self.title.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+-            self.line.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
++            self.title.SetCursor(wx.Cursor(wx.CURSOR_HAND))
++            self.line.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+ 
+         # Layout
+         vbox = wx.BoxSizer(wx.VERTICAL)
+@@ -256,10 +256,7 @@ class ControlCollection(wx.Panel):
+ 
+         # Layout
+         self.vbox = wx.BoxSizer(wx.VERTICAL)
+-        if sys.is_wx30():
+-            self.SetSizerAndFit(self.vbox)
+-        else:
+-            self.SetSizer(self.vbox)
++        self.SetSizerAndFit(self.vbox)
+         self.Layout()
+ 
+     def __getitem__(self, key):
+@@ -271,14 +268,13 @@ class ControlCollection(wx.Panel):
+         self.control_panels.update({_name: control})
+         self.vbox.Add(control, 0, wx.BOTTOM | wx.EXPAND, 5)
+         self.vbox.Layout()
+-        if sys.is_wx30():
+-            self.SetSizerAndFit(self.vbox)
++        self.SetSizerAndFit(self.vbox)
+ 
+     def update_callback(self, _name, _callback):
+         self.control_panels[_name].set_engine_callback(_callback)
+ 
+     def reset_profile(self):
+-        for control in self.control_panels.values():
++        for control in list(self.control_panels.values()):
+             control.reset_profile()
+ 
+     def enable(self, _name):
+@@ -288,7 +284,7 @@ class ControlCollection(wx.Panel):
+         self.items[_name].Disable()
+ 
+     def update_from_profile(self):
+-        for control in self.control_panels.values():
++        for control in list(self.control_panels.values()):
+             control.update_from_profile()
+ 
+     def show_item(self, _name):
+@@ -381,7 +377,7 @@ class Slider(ControlPanel):
+ 
+         # Layout
+         hbox = wx.BoxSizer(wx.HORIZONTAL)
+-        if sys.is_wx30():
++        if sys.is_darwin():
+             hbox.Add(self.label, 0, wx.BOTTOM | wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
+             hbox.AddStretchSpacer()
+             hbox.Add(self.control, 0, wx.BOTTOM | wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 5)
+@@ -425,7 +421,7 @@ class ComboBox(ControlPanel):
+         choices = self.setting._possible_values
+         _choices = [_(i) for i in choices]
+ 
+-        self.key_dict = dict(zip(_choices, choices))
++        self.key_dict = dict(list(zip(_choices, choices)))
+ 
+         # Elements
+         label = wx.StaticText(self, label=_(self.setting._label), size=(130, -1))
+diff -uprN build_orig/src/horus/gui/util/image_view.py build_custom/src/horus/gui/util/image_view.py
+--- build_orig/src/horus/gui/util/image_view.py	2021-06-09 09:50:13.000000000 +0900
++++ build_custom/src/horus/gui/util/image_view.py	2019-04-29 11:12:53.345217000 +0900
+@@ -5,6 +5,8 @@ __author__ = 'Jesús Arroyo Torrens <jes
+ __copyright__ = 'Copyright (C) 2014-2016 Mundo Reader S.L.'
+ __license__ = 'GNU General Public License v2 http://www.gnu.org/licenses/gpl2.html'
+ 
++import time
++
+ import wx._core
+ 
+ from horus.util import resources
+@@ -22,11 +24,11 @@ class ImageView(wx.Panel):
+ 
+         self.default_image = wx.Image(resources.get_path_for_image("nusb.png"))
+         self.image = self.default_image
+-        self.bitmap = wx.BitmapFromImage(self.default_image)
++        self.bitmap = wx.Bitmap(self.default_image)
+ 
+         self.black = black
+         self.frame = None
+-        self.current_size = self.GetSizeTuple()
++        self.current_size = self.GetSize()
+         self.SetDoubleBuffered(True)
+ 
+         self.Bind(wx.EVT_SHOW, self.on_show)
+@@ -37,7 +39,7 @@ class ImageView(wx.Panel):
+         self.hide = False
+ 
+     def on_show(self, event):
+-        if event.GetShow():
++        if event.IsShown():
+             self.GetParent().Layout()
+             self.Layout()
+ 
+@@ -76,7 +78,7 @@ class ImageView(wx.Panel):
+     def refresh_bitmap(self):
+         (w, h, self.x_offset, self.y_offset) = self.get_best_size()
+         if w > 0 and h > 0:
+-            self.bitmap = wx.BitmapFromImage(self.image.Scale(w, h, self.quality))
++            self.bitmap = wx.Bitmap(self.image.Scale(w, h, self.quality))
+             self.Refresh()
+ 
+     def get_best_size(self):
+diff -uprN build_orig/src/horus/gui/util/opengl_gui.py build_custom/src/horus/gui/util/opengl_gui.py
+--- build_orig/src/horus/gui/util/opengl_gui.py	2021-06-09 09:50:13.000000000 +0900
++++ build_custom/src/horus/gui/util/opengl_gui.py	2021-06-01 05:04:21.802413000 +0900
+@@ -64,19 +64,19 @@ class glGuiControl(object):
+ 
+     def focus_next(self):
+         control_list = self._parent._gl_gui_control_list
+-        for n in xrange(control_list.index(self) + 1, len(control_list)):
++        for n in range(control_list.index(self) + 1, len(control_list)):
+             if self._parent._gl_gui_control_list[n].setFocus():
+                 return
+-        for n in xrange(0, control_list.index(self)):
++        for n in range(0, control_list.index(self)):
+             if self._parent._gl_gui_control_list[n].setFocus():
+                 return
+ 
+     def focus_previous(self):
+         control_list = self._parent._gl_gui_control_list
+-        for n in xrange(control_list.index(self) - 1, -1, -1):
++        for n in range(control_list.index(self) - 1, -1, -1):
+             if self._parent._gl_gui_control_list[n].setFocus():
+                 return
+-        for n in xrange(len(control_list) - 1, control_list.index(self), -1):
++        for n in range(len(control_list) - 1, control_list.index(self), -1):
+             if self._parent._gl_gui_control_list[n].setFocus():
+                 return
+ 
+@@ -154,23 +154,23 @@ class glGuiPanel(glcanvas.GLCanvas):
+         self._refresh_queued = False
+         self._idle_called = False
+ 
+-        wx.EVT_PAINT(self, self._on_gui_paint)
+-        wx.EVT_SIZE(self, self._on_size)
+-        wx.EVT_ERASE_BACKGROUND(self, self._on_erase_background)
+-        wx.EVT_LEFT_DOWN(self, self._on_gui_mouse_down)
+-        wx.EVT_LEFT_DCLICK(self, self._on_gui_mouse_down)
+-        wx.EVT_LEFT_UP(self, self._on_gui_mouse_up)
+-        wx.EVT_RIGHT_DOWN(self, self._on_gui_mouse_down)
+-        wx.EVT_RIGHT_DCLICK(self, self._on_gui_mouse_down)
+-        wx.EVT_RIGHT_UP(self, self._on_gui_mouse_up)
+-        wx.EVT_MIDDLE_DOWN(self, self._on_gui_mouse_down)
+-        wx.EVT_MIDDLE_DCLICK(self, self._on_gui_mouse_down)
+-        wx.EVT_MIDDLE_UP(self, self._on_gui_mouse_up)
+-        wx.EVT_MOTION(self, self._on_gui_mouse_motion)
+-        wx.EVT_KEY_DOWN(self, self._on_gui_key_down)
+-        wx.EVT_KEY_UP(self, self._on_gui_key_up)
+-        wx.EVT_KILL_FOCUS(self, self._on_focus_lost)
+-        wx.EVT_IDLE(self, self._on_idle)
++        wx.EvtHandler.Bind(self, wx.EVT_PAINT, self._on_gui_paint)
++        wx.EvtHandler.Bind(self, wx.EVT_SIZE, self._on_size)
++        wx.EvtHandler.Bind(self, wx.EVT_ERASE_BACKGROUND, self._on_erase_background)
++        wx.EvtHandler.Bind(self, wx.EVT_LEFT_DOWN, self._on_gui_mouse_down)
++        wx.EvtHandler.Bind(self, wx.EVT_LEFT_DCLICK, self._on_gui_mouse_down)
++        wx.EvtHandler.Bind(self, wx.EVT_LEFT_UP, self._on_gui_mouse_up)
++        wx.EvtHandler.Bind(self, wx.EVT_RIGHT_DOWN, self._on_gui_mouse_down)
++        wx.EvtHandler.Bind(self, wx.EVT_RIGHT_DCLICK, self._on_gui_mouse_down)
++        wx.EvtHandler.Bind(self, wx.EVT_RIGHT_UP, self._on_gui_mouse_up)
++        wx.EvtHandler.Bind(self, wx.EVT_MIDDLE_DOWN, self._on_gui_mouse_down)
++        wx.EvtHandler.Bind(self, wx.EVT_MIDDLE_DCLICK, self._on_gui_mouse_down)
++        wx.EvtHandler.Bind(self, wx.EVT_MIDDLE_UP, self._on_gui_mouse_up)
++        wx.EvtHandler.Bind(self, wx.EVT_MOTION, self._on_gui_mouse_motion)
++        wx.EvtHandler.Bind(self, wx.EVT_KEY_DOWN, self._on_gui_key_down)
++        wx.EvtHandler.Bind(self, wx.EVT_KEY_UP, self._on_gui_key_up)
++        wx.EvtHandler.Bind(self, wx.EVT_KILL_FOCUS, self._on_focus_lost)
++        wx.EvtHandler.Bind(self, wx.EVT_IDLE, self._on_idle)
+ 
+     def _on_idle(self, e):
+         self._idle_called = True
+@@ -235,7 +235,7 @@ class glGuiPanel(glcanvas.GLCanvas):
+             errStr = _("An error occurred during the 3D view drawing.")
+             tb = traceback.extract_tb(sys.exc_info()[2])
+             errStr += "\n%s: '%s'" % (str(sys.exc_info()[0].__name__), str(sys.exc_info()[1]))
+-            for n in xrange(len(tb) - 1, -1, -1):
++            for n in range(len(tb) - 1, -1, -1):
+                 locationInfo = tb[n]
+                 errStr += "\n @ %s:%s:%d" % (
+                     os.path.basename(locationInfo[0]), locationInfo[2], locationInfo[1])
+diff -uprN build_orig/src/horus/gui/util/opengl_helpers.py build_custom/src/horus/gui/util/opengl_helpers.py
+--- build_orig/src/horus/gui/util/opengl_helpers.py	2021-06-09 09:50:13.000000000 +0900
++++ build_custom/src/horus/gui/util/opengl_helpers.py	2021-06-01 05:02:47.406103700 +0900
+@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
+ 
+ from sys import platform as _platform
+ if _platform != 'darwin':
+-    glutInit()  # Hack; required before glut can be called. Not required for all OS.
+-
++#    glutInit()  # Hack; required before glut can be called. Not required for all OS.
++    pass
+ 
+ class GLReferenceCounter(object):
+ 
+@@ -73,7 +73,7 @@ class GLShader(GLReferenceCounter):
+                 raise RuntimeError("Link failure: %s" % (glGetProgramInfoLog(self._program)))
+             glDeleteShader(vertex_shader)
+             glDeleteShader(fragment_shader)
+-        except RuntimeError, e:
++        except RuntimeError as e:
+             logger.error(str(e))
+             self._program = None
+ 
+@@ -245,7 +245,7 @@ class GLVBO(GLReferenceCounter):
+             batch_size = 996
+             extra_start_pos = int(self._size / batch_size) * batch_size  # leftovers.
+             extra_count = self._size - extra_start_pos
+-            for i in xrange(0, int(self._size / batch_size)):
++            for i in range(0, int(self._size / batch_size)):
+                 glDrawArrays(self._render_type, i * batch_size, batch_size)
+             glDrawArrays(self._render_type, extra_start_pos, extra_count)
+ 
+@@ -301,7 +301,7 @@ def unproject(winx, winy, winz, model_ma
+     final_matrix = np_model_matrix * np_proj_matrix
+     final_matrix = numpy.linalg.inv(final_matrix)
+ 
+-    viewport = map(float, viewport)
++    viewport = list(map(float, viewport))
+     if viewport[2] > 0 and viewport[3] > 0:
+         vector = numpy.array([(winx - viewport[0]) / viewport[2] * 2.0 - 1.0,
+                               (winy - viewport[1]) / viewport[3] * 2.0 - 1.0,
+@@ -321,12 +321,12 @@ def load_gl_texture(filename):
+     glBindTexture(GL_TEXTURE_2D, tex)
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+-    img = wx.ImageFromBitmap(wx.Bitmap(get_path_for_image(filename)))
++    img = wx.Bitmap.ConvertToImage(wx.Bitmap(get_path_for_image(filename)))
+     rgb_data = img.GetData()
+-    alpha_data = img.GetAlphaData()
++    alpha_data = img.GetAlphaBuffer()
+     if alpha_data is not None:
+         data = ''
+-        for i in xrange(0, len(alpha_data)):
++        for i in range(0, len(alpha_data)):
+             data += rgb_data[i * 3:i * 3 + 3] + alpha_data[i]
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img.GetWidth(),
+                      img.GetHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, data)
+diff -uprN build_orig/src/horus/gui/util/preferences.py build_custom/src/horus/gui/util/preferences.py
+--- build_orig/src/horus/gui/util/preferences.py	2021-06-09 09:50:14.000000000 +0900
++++ build_custom/src/horus/gui/util/preferences.py	2019-04-27 14:55:11.957059700 +0900
+@@ -39,7 +39,7 @@ class PreferencesDialog(wx.Dialog):
+         values = profile.settings.get_possible_values('luminosity')
+         for value in values:
+             self.luminosity_values.append(_(value))
+-        self.luminosity_dict = dict(zip(self.luminosity_values, values))
++        self.luminosity_dict = dict(list(zip(self.luminosity_values, values)))
+         self.luminosity_label = wx.StaticText(self, label=_("Luminosity"))
+         self.luminosity_label.SetToolTip(wx.ToolTip(
+             _("Change the luminosity until colored lines appear "
+diff -uprN build_orig/src/horus/gui/util/scene_view.py build_custom/src/horus/gui/util/scene_view.py
+--- build_orig/src/horus/gui/util/scene_view.py	2021-06-09 09:50:14.000000000 +0900
++++ build_custom/src/horus/gui/util/scene_view.py	2019-04-29 10:45:34.247471100 +0900
+@@ -69,8 +69,10 @@ class SceneView(opengl_gui.glGuiPanel):
+ 
+         self.update_profile_to_controls()
+ 
++        self._object_shader_no_light = None
++
+     def on_show(self, event):
+-        if event.GetShow():
++        if event.IsShown():
+             self.GetParent().Layout()
+             self.Layout()
+ 
+@@ -89,7 +91,7 @@ class SceneView(opengl_gui.glGuiPanel):
+                 del self._object._mesh
+             del self._object
+         if self._platform_mesh is not None:
+-            for _object in self._platform_mesh.values():
++            for _object in list(self._platform_mesh.values()):
+                 if _object._mesh is not None:
+                     if _object._mesh.vbo is not None and _object._mesh.vbo.dec_ref():
+                         self.gl_release_list.append(_object._mesh.vbo)
+@@ -110,7 +112,7 @@ class SceneView(opengl_gui.glGuiPanel):
+         # TODO: optimize
+         if self._object is not None:
+             if self._object._mesh is not None:
+-                for i in xrange(point.shape[1]):
++                for i in range(point.shape[1]):
+                     self._object._mesh._add_vertex(
+                         point[0][i], point[1][i], point[2][i],
+                         color[0][i], color[1][i], color[2][i])
+@@ -598,7 +600,7 @@ class SceneView(opengl_gui.glGuiPanel):
+                         obj._mesh.vertexes[:obj._mesh.vertex_count],
+                         obj._mesh.normal[:obj._mesh.vertex_count])
+                 if brightness != 0:
+-                    glColor4fv(map(lambda idx: idx * brightness, self._obj_color))
++                    glColor4fv([idx * brightness for idx in self._obj_color])
+                 obj._mesh.vbo.render()
+         glPopMatrix()
+ 
+@@ -646,7 +648,7 @@ class SceneView(opengl_gui.glGuiPanel):
+ 
+             # Draw the sides of the build volume.
+             glBegin(GL_QUADS)
+-            for n in xrange(0, len(polys[0])):
++            for n in range(0, len(polys[0])):
+                 if machine_shape == 'Rectangular':
+                     if n % 2 == 0:
+                         glColor4ub(5, 171, 231, 96)
+diff -uprN build_orig/src/horus/gui/welcome.py build_custom/src/horus/gui/welcome.py
+--- build_orig/src/horus/gui/welcome.py	2021-06-09 09:50:12.000000000 +0900
++++ build_custom/src/horus/gui/welcome.py	2016-05-20 17:12:10.000000000 +0900
+@@ -65,7 +65,7 @@ class Header(wx.Panel):
+         logo.set_image(wx.Image(resources.get_path_for_image("logo.png")))
+         title_text = wx.StaticText(self, label=_("3D scanning for everyone"))
+         title_font = title_text.GetFont()
+-        title_font.SetPointSize(14)
++        title_font.SetPointSize(15)
+         title_text.SetFont(title_font)
+         separator = wx.StaticLine(self, -1, style=wx.LI_HORIZONTAL)
+ 
+diff -uprN build_orig/src/horus/gui/wizard/scanning_page.py build_custom/src/horus/gui/wizard/scanning_page.py
+--- build_orig/src/horus/gui/wizard/scanning_page.py	2021-06-09 09:50:16.000000000 +0900
++++ build_custom/src/horus/gui/wizard/scanning_page.py	2019-04-27 14:55:13.433671700 +0900
+@@ -30,8 +30,8 @@ class ScanningPage(WizardPage):
+         else:
+             value = _("High")
+         self.resolution_label = wx.StaticText(self.panel, label=_("Resolution"))
+-        self.resolution_label.SetToolTip(wx.ToolTip(_(u"Set the motor step. High (0.45º),"
+-                                                      u" Medium (0.9º), Low (1.8º)")))
++        self.resolution_label.SetToolTip(wx.ToolTip(_("Set the motor step. High (0.45º),"
++                                                      " Medium (0.9º), Low (1.8º)")))
+         self.resolution_combo_box = wx.ComboBox(self.panel, wx.ID_ANY,
+                                                 size=(200, -1),
+                                                 value=value,
+@@ -42,7 +42,7 @@ class ScanningPage(WizardPage):
+         choices = profile.settings.get_possible_values('use_laser')
+         for i in choices:
+             _choices.append(_(i))
+-        self.laser_dict = dict(zip(_choices, choices))
++        self.laser_dict = dict(list(zip(_choices, choices)))
+         self.laser_label = wx.StaticText(self.panel, label=_("Use laser"))
+         self.laser_combo_box = wx.ComboBox(self.panel, wx.ID_ANY,
+                                            size=(200, -1),
+diff -uprN build_orig/src/horus/gui/wizard/wizard_page.py build_custom/src/horus/gui/wizard/wizard_page.py
+--- build_orig/src/horus/gui/wizard/wizard_page.py	2021-06-09 09:50:16.000000000 +0900
++++ build_custom/src/horus/gui/wizard/wizard_page.py	2016-05-20 17:12:10.000000000 +0900
+@@ -110,7 +110,7 @@ class Breadcrumbs(wx.Panel):
+         self.SetSizer(vbox)
+         self.Layout()
+ 
+-    def _hide(self, label):
++    def _hide(label):
+         for page in self.pages:
+             if page.enable_next:
+                 if page.title != label:
+@@ -118,7 +118,7 @@ class Breadcrumbs(wx.Panel):
+             else:
+                 break
+ 
+-    def _show(self, label):
++    def _show(label):
+         for page in self.pages:
+             if page.enable_next:
+                 if page.title == label:
+diff -uprN build_orig/src/horus/gui/workbench/adjustment/current_video.py build_custom/src/horus/gui/workbench/adjustment/current_video.py
+--- build_orig/src/horus/gui/workbench/adjustment/current_video.py	2021-06-09 09:50:20.000000000 +0900
++++ build_custom/src/horus/gui/workbench/adjustment/current_video.py	2019-04-27 14:55:13.967381700 +0900
+@@ -42,7 +42,7 @@ class CurrentVideo(object):
+ 
+         if self.mode == 'Gray':
+             images = image_capture.capture_lasers()
+-            for i in xrange(2):
++            for i in range(2):
+                 images[i] = laser_segmentation.compute_line_segmentation(images[i])
+             if images[0] is not None and images[1] is not None:
+                 image = images[0] + images[1]
+diff -uprN build_orig/src/horus/gui/workbench/adjustment/main.py build_custom/src/horus/gui/workbench/adjustment/main.py
+--- build_orig/src/horus/gui/workbench/adjustment/main.py	2021-06-09 09:50:21.000000000 +0900
++++ build_custom/src/horus/gui/workbench/adjustment/main.py	2016-05-20 17:12:10.000000000 +0900
+@@ -51,7 +51,7 @@ class AdjustmentWorkbench(Workbench):
+         self.pages_collection['video_view'].reset()
+ 
+     def setup_engine(self):
+-        driver.camera.set_frame_rate(int(profile.settings['frame_rate']))
++        driver.camera.set_frame_rate(int(profile.settings['framerate']))
+         driver.camera.set_resolution(
+             profile.settings['camera_width'], profile.settings['camera_height'])
+         driver.camera.set_rotate(profile.settings['camera_rotate'])
+diff -uprN build_orig/src/horus/gui/workbench/adjustment/panels.py build_custom/src/horus/gui/workbench/adjustment/panels.py
+--- build_orig/src/horus/gui/workbench/adjustment/panels.py	2021-06-09 09:50:21.000000000 +0900
++++ build_custom/src/horus/gui/workbench/adjustment/panels.py	2016-05-20 17:12:10.000000000 +0900
+@@ -135,7 +135,7 @@ class ScanCapturePanel(ExpandablePanel):
+             self.get_control('exposure_laser_scanning').Hide()
+             self.get_control('remove_background_scanning').Hide()
+ 
+-        if sys.is_wx30():
++        if sys.is_darwin():
+             self.content.SetSizerAndFit(self.content.vbox)
+         if sys.is_windows():
+             self.parent.Refresh()
+@@ -325,7 +325,7 @@ class CalibrationCapturePanel(Expandable
+             self.get_control('exposure_laser_calibration').Hide()
+             self.get_control('remove_background_calibration').Hide()
+ 
+-        if sys.is_wx30():
++        if sys.is_darwin():
+             self.content.SetSizerAndFit(self.content.vbox)
+         if sys.is_windows():
+             self.parent.Refresh()
+diff -uprN build_orig/src/horus/gui/workbench/calibration/main.py build_custom/src/horus/gui/workbench/calibration/main.py
+--- build_orig/src/horus/gui/workbench/calibration/main.py	2021-06-09 09:50:22.000000000 +0900
++++ build_custom/src/horus/gui/workbench/calibration/main.py	2016-05-20 17:12:10.000000000 +0900
+@@ -103,7 +103,7 @@ class CalibrationWorkbench(Workbench):
+             self.pages_collection[page].reset()
+ 
+     def setup_engine(self):
+-        driver.camera.set_frame_rate(int(profile.settings['frame_rate']))
++        driver.camera.set_frame_rate(int(profile.settings['framerate']))
+         driver.camera.set_resolution(
+             profile.settings['camera_width'], profile.settings['camera_height'])
+         driver.camera.set_rotate(profile.settings['camera_rotate'])
+diff -uprN build_orig/src/horus/gui/workbench/calibration/pages/camera_intrinsics.py build_custom/src/horus/gui/workbench/calibration/pages/camera_intrinsics.py
+--- build_orig/src/horus/gui/workbench/calibration/pages/camera_intrinsics.py	2021-06-09 09:50:22.000000000 +0900
++++ build_custom/src/horus/gui/workbench/calibration/pages/camera_intrinsics.py	2019-04-21 12:14:15.000000000 +0900
+@@ -157,7 +157,7 @@ class CameraIntrinsics3DPlot(wx.Panel):
+         self.canvas = FigureCanvasWxAgg(self, -1, self.fig)
+         self.canvas.SetExtraStyle(wx.EXPAND)
+ 
+-        self.ax = self.fig.gca(projection='3d', axisbg=(0.7490196, 0.7490196, 0.7490196, 1))
++        self.ax = self.fig.gca(projection='3d', facecolor=(0.7490196, 0.7490196, 0.7490196, 1))
+ 
+         self.print_canvas()
+ 
+diff -uprN build_orig/src/horus/gui/workbench/calibration/pages/capture_page.py build_custom/src/horus/gui/workbench/calibration/pages/capture_page.py
+--- build_orig/src/horus/gui/workbench/calibration/pages/capture_page.py	2021-06-09 09:50:23.000000000 +0900
++++ build_custom/src/horus/gui/workbench/calibration/pages/capture_page.py	2019-04-27 14:55:15.986038000 +0900
+@@ -38,7 +38,7 @@ class CapturePage(Page):
+         self.current_grid = 0
+         self.image_grid_panel = wx.Panel(self.panel)
+         self.grid_sizer = wx.GridSizer(self.rows, self.columns, 3, 3)
+-        for panel in xrange(self.rows * self.columns):
++        for panel in range(self.rows * self.columns):
+             self.panel_grid.append(ImageView(self.image_grid_panel))
+             self.panel_grid[panel].Bind(wx.EVT_KEY_DOWN, self.on_key_press)
+             self.grid_sizer.Add(self.panel_grid[panel], 0, wx.ALL | wx.EXPAND)
+@@ -62,7 +62,7 @@ class CapturePage(Page):
+         self.current_grid = 0
+         self.gauge.SetValue(0)
+         camera_intrinsics.reset()
+-        for panel in xrange(self.rows * self.columns):
++        for panel in range(self.rows * self.columns):
+             self.panel_grid[panel].SetBackgroundColour((221, 221, 221))
+             self.panel_grid[panel].set_image(wx.Image(resources.get_path_for_image("void.png")))
+ 
+diff -uprN build_orig/src/horus/gui/workbench/calibration/pages/laser_triangulation.py build_custom/src/horus/gui/workbench/calibration/pages/laser_triangulation.py
+--- build_orig/src/horus/gui/workbench/calibration/pages/laser_triangulation.py	2021-06-09 09:50:23.000000000 +0900
++++ build_custom/src/horus/gui/workbench/calibration/pages/laser_triangulation.py	2019-04-21 12:14:48.000000000 +0900
+@@ -182,7 +182,7 @@ class LaserTriangulation3DPlot(wx.Panel)
+         fig = Figure(facecolor=(0.7490196, 0.7490196, 0.7490196, 1), tight_layout=True)
+         self.canvas = FigureCanvasWxAgg(self, -1, fig)
+         self.canvas.SetExtraStyle(wx.EXPAND)
+-        self.ax = fig.gca(projection='3d', axisbg=(0.7490196, 0.7490196, 0.7490196, 1))
++        self.ax = fig.gca(projection='3d', facecolor=(0.7490196, 0.7490196, 0.7490196, 1))
+ 
+         self.Bind(wx.EVT_SIZE, self.onSize)
+         self.Layout()
+diff -uprN build_orig/src/horus/gui/workbench/calibration/pages/platform_extrinsics.py build_custom/src/horus/gui/workbench/calibration/pages/platform_extrinsics.py
+--- build_orig/src/horus/gui/workbench/calibration/pages/platform_extrinsics.py	2021-06-09 09:50:24.000000000 +0900
++++ build_custom/src/horus/gui/workbench/calibration/pages/platform_extrinsics.py	2019-04-21 12:15:11.000000000 +0900
+@@ -179,7 +179,7 @@ class PlatformExtrinsics3DPlot(wx.Panel)
+         fig = Figure(facecolor=(0.7490196, 0.7490196, 0.7490196, 1), tight_layout=True)
+         self.canvas = FigureCanvasWxAgg(self, -1, fig)
+         self.canvas.SetExtraStyle(wx.EXPAND)
+-        self.ax = fig.gca(projection='3d', axisbg=(0.7490196, 0.7490196, 0.7490196, 1))
++        self.ax = fig.gca(projection='3d', facecolor=(0.7490196, 0.7490196, 0.7490196, 1))
+ 
+         self.Bind(wx.EVT_SIZE, self.on_size)
+         self.Layout()
+diff -uprN build_orig/src/horus/gui/workbench/control/main.py build_custom/src/horus/gui/workbench/control/main.py
+--- build_orig/src/horus/gui/workbench/control/main.py	2021-06-09 09:50:25.000000000 +0900
++++ build_custom/src/horus/gui/workbench/control/main.py	2016-05-20 17:12:10.000000000 +0900
+@@ -51,7 +51,7 @@ class ControlWorkbench(Workbench):
+         self.pages_collection['video_view'].reset()
+ 
+     def setup_engine(self):
+-        driver.camera.set_frame_rate(int(profile.settings['frame_rate']))
++        driver.camera.set_frame_rate(int(profile.settings['framerate']))
+         driver.camera.set_resolution(
+             profile.settings['camera_width'], profile.settings['camera_height'])
+         driver.camera.set_rotate(profile.settings['camera_rotate'])
+diff -uprN build_orig/src/horus/gui/workbench/control/panels.py build_custom/src/horus/gui/workbench/control/panels.py
+--- build_orig/src/horus/gui/workbench/control/panels.py	2021-06-09 09:50:25.000000000 +0900
++++ build_custom/src/horus/gui/workbench/control/panels.py	2019-04-27 14:55:15.112931800 +0900
+@@ -54,7 +54,7 @@ class CameraControl(ExpandablePanel):
+     def _save_image(self):
+         image = driver.camera.capture_image()
+         dlg = wx.FileDialog(self, _("Save image"), style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
+-        wildcard_list = ';'.join(map(lambda s: '*' + s, ['.png']))
++        wildcard_list = ';'.join(['*' + s for s in ['.png']])
+         wildcard_filter = "Image files (%s)|%s;%s" % (wildcard_list, wildcard_list,
+                                                       wildcard_list.upper())
+         dlg.SetWildcard(wildcard_filter)
+@@ -224,7 +224,7 @@ class GcodeSection(ControlPanel):
+         self.Layout()
+ 
+         # Events
+-        self.request.Bind(wx.wx.EVT_KEY_DOWN, self.on_key_pressed)
++        self.request.Bind(wx.EVT_KEY_DOWN, self.on_key_pressed)
+         self.control.Bind(wx.EVT_BUTTON, self.on_button_clicked)
+ 
+     def on_key_pressed(self, event):
+diff -uprN build_orig/src/horus/gui/workbench/scanning/main.py build_custom/src/horus/gui/workbench/scanning/main.py
+--- build_orig/src/horus/gui/workbench/scanning/main.py	2021-06-09 09:50:26.000000000 +0900
++++ build_custom/src/horus/gui/workbench/scanning/main.py	2021-06-09 13:56:34.593069600 +0900
+@@ -6,6 +6,7 @@ __copyright__ = 'Copyright (C) 2014-2016
+ __license__ = 'GNU General Public License v2 http://www.gnu.org/licenses/gpl2.html'
+ 
+ import struct
++import binascii
+ import wx._core
+ 
+ from horus.util import resources, profile
+@@ -29,13 +30,13 @@ class ScanningWorkbench(Workbench):
+         self.toolbar_scan = toolbar_scan
+ 
+         # Elements
+-        self.play_tool = self.toolbar_scan.AddLabelTool(
++        self.play_tool = self.toolbar_scan.AddTool(
+             wx.NewId(), _("Play"),
+             wx.Bitmap(resources.get_path_for_image("play.png")), shortHelp=_("Play"))
+-        self.stop_tool = self.toolbar_scan.AddLabelTool(
++        self.stop_tool = self.toolbar_scan.AddTool(
+             wx.NewId(), _("Stop"),
+             wx.Bitmap(resources.get_path_for_image("stop.png")), shortHelp=_("Stop"))
+-        self.pause_tool = self.toolbar_scan.AddLabelTool(
++        self.pause_tool = self.toolbar_scan.AddTool(
+             wx.NewId(), _("Pause"),
+             wx.Bitmap(resources.get_path_for_image("pause.png")), shortHelp=_("Pause"))
+         self.toolbar_scan.Realize()
+@@ -93,7 +94,7 @@ class ScanningWorkbench(Workbench):
+         self._enable_tool_scan(self.play_tool, True)
+         self._enable_tool_scan(self.stop_tool, False)
+         self._enable_tool_scan(self.pause_tool, False)
+-        driver.camera.set_frame_rate(int(profile.settings['frame_rate']))
++        driver.camera.set_frame_rate(int(profile.settings['framerate']))
+         driver.camera.set_resolution(
+             profile.settings['camera_width'], profile.settings['camera_height'])
+         driver.camera.set_rotate(profile.settings['camera_rotate'])
+@@ -139,7 +140,7 @@ class ScanningWorkbench(Workbench):
+         ciclop_scan.motor_speed = profile.settings['motor_speed_scanning']
+         ciclop_scan.motor_acceleration = profile.settings['motor_acceleration_scanning']
+         ciclop_scan.color = struct.unpack(
+-            'BBB', profile.settings['point_cloud_color'].decode('hex'))
++            'BBB', binascii.unhexlify(profile.settings['point_cloud_color']))
+         ciclop_scan.set_scan_sleep(profile.settings['scan_sleep'])
+         point_cloud_roi.set_show_center(profile.settings['show_center'])
+         point_cloud_roi.set_use_roi(profile.settings['use_roi'])
+diff -uprN build_orig/src/horus/gui/workbench/scanning/panels.py build_custom/src/horus/gui/workbench/scanning/panels.py
+--- build_orig/src/horus/gui/workbench/scanning/panels.py	2021-06-09 09:50:26.000000000 +0900
++++ build_custom/src/horus/gui/workbench/scanning/panels.py	2019-04-27 14:55:15.565584000 +0900
+@@ -142,7 +142,7 @@ class PointCloudColor(ExpandablePanel):
+             data = dialog.GetColourData()
+             color = data.GetColour().Get()
+             ciclop_scan.color = color
+-            profile.settings['point_cloud_color'] = unicode("".join(map(chr, color)).encode('hex'))
++            profile.settings['point_cloud_color'] = str("".join(map(chr, color)).encode('hex'))
+         dialog.Destroy()
+ 
+     def on_selected(self):
+diff -uprN build_orig/src/horus/gui/workbench/scanning/view_page.py build_custom/src/horus/gui/workbench/scanning/view_page.py
+--- build_orig/src/horus/gui/workbench/scanning/view_page.py	2021-06-09 09:50:27.000000000 +0900
++++ build_custom/src/horus/gui/workbench/scanning/view_page.py	2019-04-27 14:55:15.628085200 +0900
+@@ -43,9 +43,9 @@ class ViewPage(wx.SplitterWindow):
+         choices = profile.settings.get_possible_values('video_scanning')
+         for i in choices:
+             _choices.append(_(i))
+-        self.video_views_dict = dict(zip(_choices, choices))
++        self.video_views_dict = dict(list(zip(_choices, choices)))
+         self.combo_video_views = wx.ComboBox(self.video_view,
+-                                             value=_(u'Texture'),
++                                             value=_('Texture'),
+                                              choices=_choices, style=wx.CB_READONLY,
+                                              size=(100, -1), pos=(0, -1))
+         self.combo_video_views.Hide()
+@@ -55,7 +55,7 @@ class ViewPage(wx.SplitterWindow):
+         self.video_view.Bind(wx.EVT_SHOW, self.on_show)
+ 
+     def on_show(self, event):
+-        if event.GetShow():
++        if event.IsShown():
+             if driver.is_connected and profile.settings['workbench'] == 'scanning':
+                 self.video_view.play()
+         else:
+diff -uprN build_orig/src/horus/gui/workbench/toolbar.py build_custom/src/horus/gui/workbench/toolbar.py
+--- build_orig/src/horus/gui/workbench/toolbar.py	2021-06-09 09:50:17.000000000 +0900
++++ build_custom/src/horus/gui/workbench/toolbar.py	2019-04-29 11:10:46.847127500 +0900
+@@ -48,10 +48,10 @@ class ToolbarConnection(Toolbar):
+         self.on_disconnect_callback = on_disconnect_callback
+ 
+         # Elements
+-        self.connect_tool = self.toolbar.AddLabelTool(
++        self.connect_tool = self.toolbar.AddTool(
+             wx.NewId(), _("Connect"),
+             wx.Bitmap(resources.get_path_for_image("connect.png")), shortHelp=_("Connect"))
+-        self.disconnect_tool = self.toolbar.AddLabelTool(
++        self.disconnect_tool = self.toolbar.AddTool(
+             wx.NewId(), _("Disconnect"),
+             wx.Bitmap(resources.get_path_for_image("disconnect.png")), shortHelp=_("Disconnect"))
+         self.toolbar.Realize()
+diff -uprN build_orig/src/horus/gui/workbench/workbench.py build_custom/src/horus/gui/workbench/workbench.py
+--- build_orig/src/horus/gui/workbench/workbench.py	2021-06-09 09:50:18.000000000 +0900
++++ build_custom/src/horus/gui/workbench/workbench.py	2020-01-11 22:19:03.494289400 +0900
+@@ -38,7 +38,7 @@ class Workbench(wx.Panel):
+         vsbox.Add(self.panels_collection, 1, wx.ALL | wx.EXPAND, 0)
+         self.scroll_panel.SetSizer(vsbox)
+         vsbox.Fit(self.scroll_panel)
+-        panel_size = self.scroll_panel.GetSize()[0] + wx.SystemSettings_GetMetric(wx.SYS_VSCROLL_X)
++        panel_size = self.scroll_panel.GetBestSize()[0] + wx.SystemSettings.GetMetric(wx.SYS_VSCROLL_X)
+         self.scroll_panel.SetMinSize((panel_size, -1))
+         self.scroll_panel.Disable()
+ 
+@@ -89,19 +89,19 @@ class Workbench(wx.Panel):
+     def on_connect(self):
+         if driver.is_connected:
+             self.setup_engine()
+-            for _, p in self.pages_collection.iteritems():
++            for _, p in self.pages_collection.items():
+                 p.Enable()
+             self.on_open()
+ 
+     def on_disconnect(self):
+-        for _, p in self.pages_collection.iteritems():
++        for _, p in self.pages_collection.items():
+             p.Disable()
+         self.on_close()
+         self.disable_content()
+         self.reset()
+ 
+     def on_show(self, event):
+-        if event.GetShow():
++        if event.IsShown():
+             if driver.is_connected:
+                 self.setup_engine()
+                 self.on_open()
+diff -uprN build_orig/src/horus/__init__.py build_custom/src/horus/__init__.py
+--- build_orig/src/horus/__init__.py	2021-06-09 09:49:54.000000000 +0900
++++ build_custom/src/horus/__init__.py	2016-05-21 17:46:16.000000000 +0900
+@@ -6,8 +6,8 @@ __copyright__ = 'Copyright (C) 2014-2016
+ __license__ = 'GNU General Public License v2 http://www.gnu.org/licenses/gpl2.html'
+ 
+ __version__ = '0.2rc1'
+-__datetime__ = ''
+-__commit__ = ''
++__datetime__ = '2016-05-21 10:27:46 +0200'
++__commit__ = '68c1ddd156790eaba4e02f122e505a5a17210de6'
+ 
+ 
+ def Singleton(class_):
+diff -uprN build_orig/src/horus/util/avr_helpers.py build_custom/src/horus/util/avr_helpers.py
+--- build_orig/src/horus/util/avr_helpers.py	2021-06-09 09:50:28.000000000 +0900
++++ build_custom/src/horus/util/avr_helpers.py	2019-04-27 14:55:04.691665100 +0900
+@@ -6,7 +6,8 @@ __copyright__ = 'Copyright (C) 2014-2016
+ __license__ = 'GNU General Public License v2 http://www.gnu.org/licenses/gpl2.html'
+ 
+ import os
+-import resources
++from . import system as sys
++from . import resources
+ from subprocess import Popen, PIPE, STDOUT
+ 
+ import logging
+diff -uprN build_orig/src/horus/util/mesh_loaders/ply.py build_custom/src/horus/util/mesh_loaders/ply.py
+--- build_orig/src/horus/util/mesh_loaders/ply.py	2021-06-09 09:50:31.000000000 +0900
++++ build_custom/src/horus/util/mesh_loaders/ply.py	2021-06-09 14:13:17.998485400 +0900
+@@ -78,7 +78,7 @@ def load_scene(filename):
+         header = ''
+ 
+         while line != 'end_header\n' and line != '':
+-            line = f.readline()
++            line = f.readline().decode('utf-8')
+             header += line
+         # Discart faces
+         header = header.split('element face ')[0].split('\n')
+@@ -107,7 +107,7 @@ def load_scene(filename):
+                     count = int(line.split('element vertex ')[1])
+                 elif 'property ' in line:
+                     props = line.split(' ')
+-                    if props[2] in dt.keys():
++                    if props[2] in list(dt.keys()):
+                         dtype = dtype + [(dt[props[2]], df[props[1]], (ds[props[2]],))]
+ 
+             dtype = np.dtype(dtype)
+@@ -153,15 +153,15 @@ def save_scene_stream(stream, _object):
+         frame += "element face 0\n"
+         frame += "property list uchar int vertex_indices\n"
+         frame += "end_header\n"
+-        stream.write(frame)
++        stream.write(bytes(frame, 'utf-8'))
+         if m.vertex_count > 0:
+             if binary:
+-                for i in xrange(m.vertex_count):
++                for i in range(m.vertex_count):
+                     stream.write(struct.pack("<fffBBB",
+                                              m.vertexes[i, 0], m.vertexes[i, 1], m.vertexes[i, 2],
+                                              m.colors[i, 0], m.colors[i, 1], m.colors[i, 2]))
+             else:
+-                for i in xrange(m.vertex_count):
++                for i in range(m.vertex_count):
+                     stream.write("{0} {1} {2} {3} {4} {5}\n".format(
+                                  m.vertexes[i, 0], m.vertexes[i, 1], m.vertexes[i, 2],
+                                  m.colors[i, 0], m.colors[i, 1], m.colors[i, 2]))
+diff -uprN build_orig/src/horus/util/mesh_loaders/stl.py build_custom/src/horus/util/mesh_loaders/stl.py
+--- build_orig/src/horus/util/mesh_loaders/stl.py	2021-06-09 09:50:31.000000000 +0900
++++ build_custom/src/horus/util/mesh_loaders/stl.py	2019-04-29 10:38:08.206679900 +0900
+@@ -62,7 +62,7 @@ def _load_binary(mesh, stream):
+     data = np.fromfile(stream, dtype=dtype, count=count)
+ 
+     mesh.vertex_count = 3 * count
+-    n = np.zeros((mesh.vertex_count / 3, 9), np.float32)
++    n = np.zeros((int(mesh.vertex_count / 3), 9), np.float32)
+     n[:, 0:3] = n[:, 3:6] = n[:, 6:9] = data['n']
+     mesh.normal = n.reshape(mesh.vertex_count, 3)
+     mesh.vertexes = np.reshape(data['v'], (mesh.vertex_count, 3))
+diff -uprN build_orig/src/horus/util/model.py build_custom/src/horus/util/model.py
+--- build_orig/src/horus/util/model.py	2021-06-09 09:50:28.000000000 +0900
++++ build_custom/src/horus/util/model.py	2019-04-29 10:39:57.735261800 +0900
+@@ -52,7 +52,7 @@ class Model(object):
+             vertexes = self._mesh.vertexes
+             vmin = vertexes.min(0)
+             vmax = vertexes.max(0)
+-            for n in xrange(0, 3):
++            for n in range(0, 3):
+                 self._min[n] = min(vmin[n], self._min[n])
+                 self._max[n] = max(vmax[n], self._max[n])
+ 
+@@ -136,7 +136,7 @@ class Mesh(object):
+ 
+     def _calculate_normals(self):
+         # Calculate the normals
+-        tris = self.vertexes.reshape(self.vertex_count / 3, 3, 3)
++        tris = self.vertexes.reshape(int(self.vertex_count / 3), 3, 3)
+         normals = np.cross(tris[::, 1] - tris[::, 0], tris[::, 2] - tris[::, 0])
+         normals /= np.linalg.norm(normals)
+         n = np.concatenate((np.concatenate((normals, normals), axis=1), normals), axis=1)
+diff -uprN build_orig/src/horus/util/profile.py build_custom/src/horus/util/profile.py
+--- build_orig/src/horus/util/profile.py	2021-06-09 09:50:28.000000000 +0900
++++ build_custom/src/horus/util/profile.py	2019-04-27 14:55:05.623826000 +0900
+@@ -74,15 +74,15 @@ class Settings(collections.MutableMappin
+         #    return
+         setting_type = self.get_setting(key)._type
+         try:
+-            if setting_type == types.BooleanType:
++            if setting_type == bool:
+                 value = bool(value)
+-            elif setting_type == types.IntType:
++            elif setting_type == int:
+                 value = int(value)
+-            elif setting_type == types.FloatType:
++            elif setting_type == float:
+                 value = float(value)
+-            elif setting_type == types.UnicodeType:
+-                value = unicode(value)
+-            elif setting_type == types.ListType:
++            elif setting_type == str:
++                value = str(value)
++            elif setting_type == list:
+                 value = value
+             elif setting_type == np.ndarray:
+                 value = np.asarray(value)
+@@ -100,7 +100,7 @@ class Settings(collections.MutableMappin
+             self._load_json_dict(json.loads(f.read()), categories)
+ 
+     def _load_json_dict(self, json_dict, categories):
+-        for category in json_dict.keys():
++        for category in list(json_dict.keys()):
+             if category == "settings_version":
+                 continue
+             if categories is None or category in categories:
+@@ -136,7 +136,7 @@ class Settings(collections.MutableMappin
+             json_dict = initial_json.copy()
+ 
+         json_dict["settings_version"] = self.settings_version
+-        for key in self._settings_dict.keys():
++        for key in list(self._settings_dict.keys()):
+             if categories is not None and self.get_setting(key)._category not in categories:
+                 continue
+             if self.get_setting(key)._category not in json_dict:
+@@ -159,7 +159,7 @@ class Settings(collections.MutableMappin
+         if key is not None:
+             self.__setitem__(key, self.get_default(key))
+         else:
+-            for key in self._settings_dict.keys():
++            for key in list(self._settings_dict.keys()):
+                 if categories is not None and self.get_setting(key)._category not in categories:
+                     continue
+                 self.__setitem__(key, self.get_default(key))
+@@ -178,7 +178,7 @@ class Settings(collections.MutableMappin
+         _('Low')
+         self._add_setting(
+             Setting('luminosity', _('Luminosity'), 'profile_settings',
+-                    unicode, u'Medium', possible_values=(u'High', u'Medium', u'Low')))
++                    str, 'Medium', possible_values=('High', 'Medium', 'Low')))
+         self._add_setting(
+             Setting('brightness_control', _('Brightness'), 'profile_settings',
+                     int, 128, min_value=0, max_value=255))
+@@ -192,30 +192,30 @@ class Settings(collections.MutableMappin
+             Setting('exposure_control', _('Exposure'), 'profile_settings',
+                     int, 16, min_value=1, max_value=64))
+         self._add_setting(
+-            Setting('frame_rate', _('Frame rate'), 'profile_settings',
++            Setting('framerate', _('Frame rate'), 'profile_settings',
+                     int, 30, possible_values=(30, 25, 20, 15, 10, 5)))
+         self._add_setting(
+-            Setting('motor_step_control', _(u'Step (º)'), 'profile_settings',
++            Setting('motor_step_control', _('Step (º)'), 'profile_settings',
+                     float, 90.0))
+         self._add_setting(
+-            Setting('motor_speed_control', _(u'Speed (º/s)'), 'profile_settings',
++            Setting('motor_speed_control', _('Speed (º/s)'), 'profile_settings',
+                     float, 200.0, min_value=1.0, max_value=1000.0))
+         self._add_setting(
+-            Setting('motor_acceleration_control', _(u'Acceleration (º/s²)'), 'profile_settings',
++            Setting('motor_acceleration_control', _('Acceleration (º/s²)'), 'profile_settings',
+                     float, 200.0, min_value=1.0, max_value=1000.0))
+ 
+         self._add_setting(
+-            Setting('current_panel_control', u'camera_control', 'profile_settings',
+-                    unicode, u'camera_control',
+-                    possible_values=(u'camera_control', u'laser_control',
+-                                     u'ldr_value', u'motor_control', u'gcode_control')))
++            Setting('current_panel_control', 'camera_control', 'profile_settings',
++                    str, 'camera_control',
++                    possible_values=('camera_control', 'laser_control',
++                                     'ldr_value', 'motor_control', 'gcode_control')))
+ 
+         # Hack to translate combo boxes:
+         _('Texture')
+         _('Laser')
+         self._add_setting(
+             Setting('capture_mode_scanning', _('Capture mode'), 'profile_settings',
+-                    unicode, u'Texture', possible_values=(u'Texture', u'Laser')))
++                    str, 'Texture', possible_values=('Texture', 'Laser')))
+ 
+         self._add_setting(
+             Setting('brightness_texture_scanning', _('Brightness'), 'profile_settings',
+@@ -248,8 +248,8 @@ class Settings(collections.MutableMappin
+ 
+         self._add_setting(
+             Setting('red_channel_scanning', _('Red channel'), 'profile_settings',
+-                    unicode, u'R (RGB)',
+-                    possible_values=(u'R (RGB)', u'Cr (YCrCb)', u'U (YUV)')))
++                    str, 'R (RGB)',
++                    possible_values=('R (RGB)', 'Cr (YCrCb)', 'U (YUV)')))
+         self._add_setting(
+             Setting('threshold_enable_scanning', _('Enable threshold'),
+                     'profile_settings', bool, True))
+@@ -270,8 +270,8 @@ class Settings(collections.MutableMappin
+                     int, 8, min_value=0, max_value=30))
+         self._add_setting(
+             Setting('refinement_scanning', _('Refinement'), 'profile_settings',
+-                    unicode, u'SGF',
+-                    possible_values=(u'None', u'SGF')))
++                    str, 'SGF',
++                    possible_values=('None', 'SGF', 'RANSAC')))
+         _('Open')
+         _('Enable open')
+ 
+@@ -280,7 +280,7 @@ class Settings(collections.MutableMappin
+         _('Laser')
+         self._add_setting(
+             Setting('capture_mode_calibration', _('Capture mode'), 'profile_settings',
+-                    unicode, u'Pattern', possible_values=(u'Pattern', u'Laser')))
++                    str, 'Pattern', possible_values=('Pattern', 'Laser')))
+ 
+         self._add_setting(
+             Setting('brightness_pattern_calibration', _('Brightness'), 'profile_settings',
+@@ -313,8 +313,8 @@ class Settings(collections.MutableMappin
+ 
+         self._add_setting(
+             Setting('red_channel_calibration', _('Red channel'), 'profile_settings',
+-                    unicode, u'R (RGB)',
+-                    possible_values=(u'R (RGB)', u'Cr (YCrCb)', u'U (YUV)')))
++                    str, 'R (RGB)',
++                    possible_values=('R (RGB)', 'Cr (YCrCb)', 'U (YUV)')))
+         self._add_setting(
+             Setting('threshold_enable_calibration', _('Enable threshold'),
+                     'profile_settings', bool, True))
+@@ -335,19 +335,19 @@ class Settings(collections.MutableMappin
+                     int, 5, min_value=0, max_value=30))
+         self._add_setting(
+             Setting('refinement_calibration', _('Refinement'), 'profile_settings',
+-                    unicode, u'RANSAC',
+-                    possible_values=(u'None', u'SGF', u'RANSAC')))
++                    str, 'RANSAC',
++                    possible_values=('None', 'SGF', 'RANSAC')))
+ 
+         self._add_setting(
+-            Setting('current_video_mode_adjustment', u'Texture', 'profile_settings',
+-                    unicode, u'Texture',
+-                    possible_values=(u'Texture', u'Pattern', u'Laser', u'Gray')))
++            Setting('current_video_mode_adjustment', 'Texture', 'profile_settings',
++                    str, 'Texture',
++                    possible_values=('Texture', 'Pattern', 'Laser', 'Gray')))
+ 
+         self._add_setting(
+-            Setting('current_panel_adjustment', u'scan_capture', 'profile_settings',
+-                    unicode, u'scan_capture',
+-                    possible_values=(u'scan_capture', u'scan_segmentation',
+-                                     u'calibration_capture', u'calibration_segmentation')))
++            Setting('current_panel_adjustment', 'scan_capture', 'profile_settings',
++                    str, 'scan_capture',
++                    possible_values=('scan_capture', 'scan_segmentation',
++                                     'calibration_capture', 'calibration_segmentation')))
+ 
+         self._add_setting(
+             Setting('capture_texture', _('Capture texture'), 'profile_settings', bool, True))
+@@ -357,16 +357,16 @@ class Settings(collections.MutableMappin
+         _('Both')
+         self._add_setting(
+             Setting('use_laser', _('Use laser'), 'profile_settings',
+-                    unicode, u'Both', possible_values=(u'Left', u'Right', u'Both')))
++                    str, 'Both', possible_values=('Left', 'Right', 'Both')))
+ 
+         self._add_setting(
+-            Setting('motor_step_scanning', _(u'Step (º)'), 'profile_settings',
++            Setting('motor_step_scanning', _('Step (º)'), 'profile_settings',
+                     float, 0.45))
+         self._add_setting(
+-            Setting('motor_speed_scanning', _(u'Speed (º/s)'), 'profile_settings',
++            Setting('motor_speed_scanning', _('Speed (º/s)'), 'profile_settings',
+                     float, 200.0, min_value=1.0, max_value=1000.0))
+         self._add_setting(
+-            Setting('motor_acceleration_scanning', _(u'Acceleration (º/s²)'), 'profile_settings',
++            Setting('motor_acceleration_scanning', _('Acceleration (º/s²)'), 'profile_settings',
+                     float, 200.0, min_value=1.0, max_value=1000.0))
+ 
+         self._add_setting(
+@@ -381,10 +381,10 @@ class Settings(collections.MutableMappin
+                     int, 200, min_value=0, max_value=250))
+         self._add_setting(
+             Setting('point_cloud_color', _('Choose point cloud color'), 'profile_settings',
+-                    unicode, u'AAAAAA'))
++                    str, 'AAAAAA'))
+ 
+         self._add_setting(
+-            Setting('scan_sleep', _(u'Wait time in each scan interval'), 'profile_settings',
++            Setting('scan_sleep', _('Wait time in each scan interval'), 'profile_settings',
+                     float, 50.0, min_value=0.0, max_value=1000.0))
+ 
+         # Hack to translate combo boxes:
+@@ -394,28 +394,28 @@ class Settings(collections.MutableMappin
+         _('Line')
+         self._add_setting(
+             Setting('video_scanning', _('Video'), 'profile_settings',
+-                    unicode, u'Texture', possible_values=(u'Texture', u'Laser', u'Gray', u'Line')))
++                    str, 'Texture', possible_values=('Texture', 'Laser', 'Gray', 'Line')))
+ 
+         self._add_setting(
+-            Setting('save_image_button', _('Save image'), 'profile_settings', unicode, u''))
++            Setting('save_image_button', _('Save image'), 'profile_settings', str, ''))
+         self._add_setting(
+-            Setting('left_button', _('Left'), 'profile_settings', unicode, u''))
++            Setting('left_button', _('Left'), 'profile_settings', str, ''))
+         self._add_setting(
+-            Setting('right_button', _('Right'), 'profile_settings', unicode, u''))
++            Setting('right_button', _('Right'), 'profile_settings', str, ''))
+         self._add_setting(
+-            Setting('move_button', _('Move'), 'profile_settings', unicode, u''))
++            Setting('move_button', _('Move'), 'profile_settings', str, ''))
+         self._add_setting(
+-            Setting('enable_button', _('Enable'), 'profile_settings', unicode, u''))
++            Setting('enable_button', _('Enable'), 'profile_settings', str, ''))
+         self._add_setting(
+-            Setting('reset_origin_button', _('Reset origin'), 'profile_settings', unicode, u''))
++            Setting('reset_origin_button', _('Reset origin'), 'profile_settings', str, ''))
+         self._add_setting(
+-            Setting('gcode_gui', _('Send'), 'profile_settings', unicode, u''))
++            Setting('gcode_gui', _('Send'), 'profile_settings', str, ''))
+         self._add_setting(
+-            Setting('ldr_value', _('Send'), 'profile_settings', unicode, u''))
++            Setting('ldr_value', _('Send'), 'profile_settings', str, ''))
+         self._add_setting(
+-            Setting('autocheck_button', _('Perform autocheck'), 'profile_settings', unicode, u''))
++            Setting('autocheck_button', _('Perform autocheck'), 'profile_settings', str, ''))
+         self._add_setting(
+-            Setting('set_resolution_button', _('Set resolution'), 'profile_settings', unicode, u''))
++            Setting('set_resolution_button', _('Set resolution'), 'profile_settings', str, ''))
+ 
+         # -- Calibration Settings
+ 
+@@ -486,17 +486,17 @@ class Settings(collections.MutableMappin
+                     np.ndarray, np.ndarray(shape=(3,), buffer=np.array([-5.0, 90.0, 320.0]))))
+ 
+         self._add_setting(
+-            Setting('laser_triangulation_hash', '', 'calibration_settings', unicode, u''))
++            Setting('laser_triangulation_hash', '', 'calibration_settings', str, ''))
+ 
+         self._add_setting(
+-            Setting('platform_extrinsics_hash', '', 'calibration_settings', unicode, u''))
++            Setting('platform_extrinsics_hash', '', 'calibration_settings', str, ''))
+ 
+         self._add_setting(
+-            Setting('current_panel_calibration', u'pattern_settings', 'profile_settings',
+-                    unicode, u'pattern_settings',
+-                    possible_values=(u'pattern_settings', u'camera_intrinsics',
+-                                     u'scanner_autocheck', u'laser_triangulation',
+-                                     u'platform_extrinsics', u'video_settings')))
++            Setting('current_panel_calibration', 'pattern_settings', 'profile_settings',
++                    str, 'pattern_settings',
++                    possible_values=('pattern_settings', 'camera_intrinsics',
++                                     'scanner_autocheck', 'laser_triangulation',
++                                     'platform_extrinsics', 'video_settings')))
+ 
+         # -- Machine Settings
+ 
+@@ -513,10 +513,10 @@ class Settings(collections.MutableMappin
+         _('Rectangular')
+         self._add_setting(
+             Setting('machine_shape', _('Machine shape'), 'machine_settings',
+-                    unicode, u'Circular', possible_values=(u'Circular', u'Rectangular')))
++                    str, 'Circular', possible_values=('Circular', 'Rectangular')))
+         self._add_setting(
+             Setting('machine_model_path', _('Machine model'), 'machine_settings',
+-                    unicode, unicode(resources.get_path_for_mesh('ciclop_platform.stl'))))
++                    str, str(resources.get_path_for_mesh('ciclop_platform.stl'))))
+         # self._add_setting(
+         #     Setting('roi_width', _('Width (mm)'), 'machine_settings',
+         #             int, 200, min_value=0, max_value=250))
+@@ -525,29 +525,29 @@ class Settings(collections.MutableMappin
+         #             int, 200, min_value=0, max_value=250))
+ 
+         self._add_setting(
+-            Setting('current_panel_scanning', u'scan_parameters', 'profile_settings',
+-                    unicode, u'scan_parameters',
+-                    possible_values=(u'scan_parameters', u'rotating_platform',
+-                                     u'point_cloud_roi', u'point_cloud_color')))
++            Setting('current_panel_scanning', 'scan_parameters', 'profile_settings',
++                    str, 'scan_parameters',
++                    possible_values=('scan_parameters', 'rotating_platform',
++                                     'point_cloud_roi', 'point_cloud_color')))
+ 
+         # -- Preferences
+ 
+         self._add_setting(
+-            Setting('serial_name', _('Serial name'), 'preferences', unicode, u''))
++            Setting('serial_name', _('Serial name'), 'preferences', str, ''))
+         self._add_setting(
+             Setting('baud_rate', _('Baud rate'), 'preferences', int, 115200,
+                     possible_values=(9600, 14400, 19200, 38400, 57600, 115200)))
+         self._add_setting(
+-            Setting('camera_id', _('Camera ID'), 'preferences', unicode, u''))
++            Setting('camera_id', _('Camera ID'), 'preferences', str, ''))
+         self._add_setting(
+-            Setting('board', _('Board'), 'preferences', unicode, u'BT ATmega328',
+-                    possible_values=(u'Arduino Uno', u'BT ATmega328')))
++            Setting('board', _('Board'), 'preferences', str, 'BT ATmega328',
++                    possible_values=('Arduino Uno', 'BT ATmega328')))
+         self._add_setting(
+             Setting('invert_motor', _('Invert motor'), 'preferences', bool, False))
+         self._add_setting(
+-            Setting('language', _('Language'), 'preferences', unicode, u'English',
+-                    possible_values=(u'English', u'Español', u'Français',
+-                                     u'Deutsch', u'Italiano', u'Português'),
++            Setting('language', _('Language'), 'preferences', str, 'English',
++                    possible_values=('English', 'Español', 'Français',
++                                     'Deutsch', 'Italiano', 'Português'),
+                     tooltip=_('Change the language of Horus. '
+                               'Switching language will require a program restart')))
+ 
+@@ -579,8 +579,8 @@ class Settings(collections.MutableMappin
+ 
+         # Hack to translate combo boxes:
+         self._add_setting(
+-            Setting('workbench', _('Workbench'), 'preferences', unicode, u'scanning',
+-                    possible_values=(u'control', u'adjustment', u'calibration', u'scanning')))
++            Setting('workbench', _('Workbench'), 'preferences', str, 'scanning',
++                    possible_values=('control', 'adjustment', 'calibration', 'scanning')))
+         self._add_setting(
+             Setting('show_welcome', _('Show welcome'), 'preferences', bool, True))
+         self._add_setting(
+@@ -617,14 +617,14 @@ class Settings(collections.MutableMappin
+             Setting('last_files', _('Last files'), 'preferences', list, []))
+         # TODO: Set this default value
+         self._add_setting(
+-            Setting('last_file', _('Last file'), 'preferences', unicode, u''))
++            Setting('last_file', _('Last file'), 'preferences', str, ''))
+         # TODO: Set this default value
+         self._add_setting(
+-            Setting('last_profile', _('Last profile'), 'preferences', unicode, u''))
++            Setting('last_profile', _('Last profile'), 'preferences', str, ''))
+         self._add_setting(
+-            Setting('model_color', _('Model color'), 'preferences', unicode, u'888888'))
++            Setting('model_color', _('Model color'), 'preferences', str, '888888'))
+         self._add_setting(
+-            Setting('last_clear_log_date', _('Last clear log date'), 'preferences', unicode, u''))
++            Setting('last_clear_log_date', _('Last clear log date'), 'preferences', str, ''))
+ 
+ 
+ class Setting(object):
+@@ -805,7 +805,7 @@ def get_size_polygons(size, machine_shap
+     if machine_shape == 'Circular':
+         circle = []
+         steps = 32
+-        for n in xrange(0, steps):
++        for n in range(0, steps):
+             circle.append([math.cos(float(n) / steps * 2 * math.pi) * size[0] / 2,
+                            math.sin(float(n) / steps * 2 * math.pi) * size[1] / 2])
+         ret.append(np.array(circle, np.float32))
+diff -uprN build_orig/src/horus/util/resources.py build_custom/src/horus/util/resources.py
+--- build_orig/src/horus/util/resources.py	2021-06-09 09:50:29.000000000 +0900
++++ build_custom/src/horus/util/resources.py	2019-04-27 15:17:27.771220700 +0900
+@@ -62,15 +62,16 @@ def setup_localization(selected_language
+ 
+     locale_path = os.path.normpath(os.path.join(resource_base_path, 'locale'))
+     translation = gettext.translation('horus', locale_path, languages, fallback=True)
+-    translation.install(unicode=True)
++    translation.install()
++#    translation.install(str=True)
+ 
+ 
+ def get_language_options():
+     return [
+-        ['en', u'English'],
+-        ['es', u'Español'],
+-        ['fr', u'Français'],
+-        ['de', u'Deutsch'],
+-        ['it', u'Italiano'],
+-        ['pt', u'Português'],
++        ['en', 'English'],
++        ['es', 'Español'],
++        ['fr', 'Français'],
++        ['de', 'Deutsch'],
++        ['it', 'Italiano'],
++        ['pt', 'Português'],
+     ]
+diff -uprN build_orig/src/horus/util/system.py build_custom/src/horus/util/system.py
+--- build_orig/src/horus/util/system.py	2021-06-09 09:50:30.000000000 +0900
++++ build_custom/src/horus/util/system.py	2016-05-06 19:35:04.000000000 +0900
+@@ -5,7 +5,6 @@ __author__ = 'Jesús Arroyo Torrens <jes
+ __copyright__ = 'Copyright (C) 2014-2016 Mundo Reader S.L.'
+ __license__ = 'GNU General Public License v2 http://www.gnu.org/licenses/gpl2.html'
+ 
+-import wx._core
+ import platform
+ s = platform.system()
+ del platform
+@@ -21,11 +20,3 @@ def is_darwin():
+ 
+ def is_windows():
+     return s == 'Windows'
+-
+-
+-def is_wx28():
+-    return wx.__version__.startswith('2.8')
+-
+-
+-def is_wx30():
+-    return wx.__version__.startswith('3.0')
+diff -uprN build_orig/src/horus/util/version.py build_custom/src/horus/util/version.py
+--- build_orig/src/horus/util/version.py	2021-06-09 09:50:30.000000000 +0900
++++ build_custom/src/horus/util/version.py	2019-04-27 14:55:05.759575100 +0900
+@@ -7,7 +7,7 @@ __copyright__ = 'Copyright (C) 2014-2016
+ __license__ = 'GNU General Public License v2 http://www.gnu.org/licenses/gpl2.html'
+ 
+ import json
+-import urllib2
++import urllib.request, urllib.error, urllib.parse
+ import webbrowser
+ 
+ from horus import __version__, __datetime__, __commit__
+@@ -43,10 +43,10 @@ URL_DOWNLOAD = 'https://github.com/bqlab
+ def download_lastest_data():
+     global latest_version, latest_commit, latest_datetime
+     try:
+-        f = urllib2.urlopen(URL_API_RELEASES, timeout=1)
++        f = urllib.request.urlopen(URL_API_RELEASES, timeout=1)
+         content = json.loads(f.read())
+         tag_name = content['tag_name']
+-        f = urllib2.urlopen(URL_DOWNLOAD + tag_name + '/version', timeout=1)
++        f = urllib.request.urlopen(URL_DOWNLOAD + tag_name + '/version', timeout=1)
+         content = json.loads(f.read())
+         latest_version = Version(content['version'])
+         latest_datetime = content['datetime']
