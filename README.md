@@ -10,30 +10,44 @@ This is a research project to explore the 3D laser scan with free tools. Feel fr
 
 This project has been developed in [Python](https://www.python.org/) language and it is distributed under [GPL v2](https://www.gnu.org/licenses/gpl-2.0.html) license.
 
-**This fork will be a Python3.x port. Have fun!**
+**This fork will be a Python 3.x port. Have fun!**
 
 ## Installation
 
-#### Supported
+### CAUTION
+This Python 3.x port is currently unstable.
 
-###### Current version: 0.2rc1
+### With Python 3.8.x
 
-| Logo              | Name     | Instructions                        |
-|:-----------------:|:--------:|:-----------------------------------:|
-| ![][ubuntu-logo]  | Ubuntu   | [[en]](http://horus.readthedocs.io/en/release-0.2/source/installation/ubuntu.html)  [[es]](http://horus.readthedocs.io/es/release-0.2/source/installation/ubuntu.html) |
-| ![][windows-logo] | Windows  |  [[en]](http://horus.readthedocs.io/en/release-0.2/source/installation/windows.html)  [[es]](http://horus.readthedocs.io/es/release-0.2/source/installation/windows.html) |
-| ![][macosx-logo]  | Mac OS X |  [[en]](http://horus.readthedocs.io/en/release-0.2/source/installation/macosx.html)  [[es]](http://horus.readthedocs.io/es/release-0.2/source/installation/macosx.html) |
+* 0. [Install Python 3.8.x](https://www.python.org/downloads/) and [Arduino Drivers](https://www.arduino.cc/en/software) ([if needed](https://www.arduino.cc/en/Guide/DriverInstallation)).
+* 1. [Download this Python 3.x port.](https://github.com/neetandgeeks/horus/archive/refs/heads/master.zip)
+* 2. [Making virtual environment.](https://docs.python.org/3/tutorial/venv.html)
+* 3. [Install requirements.](https://docs.python.org/3/tutorial/venv.html#managing-packages-with-pip)
+* 4. Run horus.py script.
 
-#### Experimental
+#### Example
 
-**Horus 0.2 is not supported for the following distributions**.
+##### on Windows like System
+```bat
+C:\Users\foobar> mkdir testenv &:: make your working directory
+C:\Users\foobar> cd testenv &:: change current directory
+C:\Users\foobar\testenv> py -3.8 -m venv horusenv &:: make your Python 3.8.x virtual environment
+C:\Users\foobar\testenv> .\horusenv\Scripts\activate &:: activate virtual environment
+(horusenv) C:\Users\foobar\testenv> cd ..\horus &:: change current directory to your extracted horus source
+(horusenv) C:\Users\foobar\horus> py -m pip install -r requirements.txt &:: install dependencies
+(horusenv) C:\Users\foobar\horus> py .\horus.py &:: run horus
+```
 
-However, anyone can test it and contribute to its support.
-
-| Logo               | Name      | Instructions                          |
-|:------------------:|:---------:|:-------------------------------------:|
-| ![][debian-logo]   | Debian    | [[en]](doc/installation/debian.md)    |
-| ![][fedora-logo]   | Fedora    | [[en]](doc/installation/fedora.md)    |
+##### on Unix like System
+```console
+[foobar@localhost ~]$ mkdir testenv # make your working directory
+[foobar@localhost ~]$ cd testenv # change current directory
+[foobar@localhost testenv]$ python3.8 -m venv horusenv # make your Python 3.8.x virtual environment
+[foobar@localhost testenv]$ source horusenv/bin/activate # activate virtual environment
+(horusenv) [foobar@localhost testenv]$ cd ../horus # change current directory to your extracted horus source
+(horusenv) [foobar@localhost horus]$ python3 -m pip install -r requirements.txt # install dependencies
+(horusenv) [foobar@localhost horus]$ python3 ./horus.py # run horus
+```
 
 ## Documentation
 
