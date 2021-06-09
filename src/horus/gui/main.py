@@ -77,7 +77,7 @@ class MainWindow(wx.Frame):
         sizer.Add(self.toolbar, 0, wx.ALL | wx.EXPAND)
         self.Bind(wx.EVT_COMBOBOX, self.on_combo_box_selected, self.toolbar.combo)
 
-        for workbench in self.workbench.values():
+        for workbench in list(self.workbench.values()):
             self.toolbar.combo.Append(workbench.name)
             sizer.Add(workbench, 1, wx.ALL | wx.EXPAND)
         name = self.workbench[profile.settings['workbench']].name
@@ -132,7 +132,7 @@ class MainWindow(wx.Frame):
         self.menu_scanning_panel = self.menu_scanning.AppendCheckItem(wx.NewId(), _("Panel"))
         self.menu_scanning_video = self.menu_scanning.AppendCheckItem(wx.NewId(), _("Video"))
         self.menu_scanning_scene = self.menu_scanning.AppendCheckItem(wx.NewId(), _("Scene"))
-        self.menu_view.AppendMenu(wx.NewId(), _("Scanning"), self.menu_scanning)
+        self.menu_view.Append(wx.NewId(), _("Scanning"), self.menu_scanning)
         self.menu_mode_advanced = self.menu_view.AppendCheckItem(wx.NewId(), _("Advanced mode"))
         self.menu_bar.Append(self.menu_view, _("View"))
 
@@ -191,9 +191,9 @@ class MainWindow(wx.Frame):
         last_file = os.path.split(profile.settings['last_file'])[0]
         dlg = wx.FileDialog(
             self, _("Open 3D model"), last_file, style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST)
-        wildcard_list = ';'.join(map(lambda s: '*' + s, mesh_loader.load_supported_extensions()))
+        wildcard_list = ';'.join(['*' + s for s in mesh_loader.load_supported_extensions()])
         wildcard_filter = "All (%s)|%s;%s" % (wildcard_list, wildcard_list, wildcard_list.upper())
-        wildcard_list = ';'.join(map(lambda s: '*' + s, mesh_loader.load_supported_extensions()))
+        wildcard_list = ';'.join(['*' + s for s in mesh_loader.load_supported_extensions()])
         wildcard_filter += "|Mesh files (%s)|%s;%s" % (wildcard_list, wildcard_list,
                                                        wildcard_list.upper())
         dlg.SetWildcard(wildcard_filter)
@@ -211,7 +211,7 @@ class MainWindow(wx.Frame):
         dlg = wx.FileDialog(self, _("Save 3D model"), os.path.split(
             profile.settings['last_file'])[0], style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
         file_extensions = mesh_loader.save_supported_extensions()
-        wildcard_list = ';'.join(map(lambda s: '*' + s, file_extensions))
+        wildcard_list = ';'.join(['*' + s for s in file_extensions])
         wildcard_filter = "Mesh files (%s)|%s;%s" % (wildcard_list, wildcard_list,
                                                      wildcard_list.upper())
         dlg.SetWildcard(wildcard_filter)
@@ -323,12 +323,12 @@ class MainWindow(wx.Frame):
         if status:
             self.toolbar.toolbar.Enable()
             self.toolbar.combo.Enable()
-            for i in xrange(self.menu_bar.GetMenuCount()):
+            for i in range(self.menu_bar.GetMenuCount()):
                 self.menu_bar.EnableTop(i, True)
         else:
             self.toolbar.toolbar.Disable()
             self.toolbar.combo.Disable()
-            for i in xrange(self.menu_bar.GetMenuCount()):
+            for i in range(self.menu_bar.GetMenuCount()):
                 self.menu_bar.EnableTop(i, False)
 
     def append_last_file(self, last_file):
@@ -427,12 +427,12 @@ class MainWindow(wx.Frame):
         self.Layout()
 
     def on_connect(self):
-        for workbench in self.workbench.values():
+        for workbench in list(self.workbench.values()):
             workbench.enable_content()
         self.workbench[profile.settings['workbench']].on_connect()
 
     def on_disconnect(self):
-        for workbench in self.workbench.values():
+        for workbench in list(self.workbench.values()):
             workbench.on_disconnect()
 
     def on_combo_box_selected(self, event):
@@ -442,18 +442,18 @@ class MainWindow(wx.Frame):
         self.wait_cursor = wx.BusyCursor()
         self.toolbar.combo.SetValue(name)
         if sys.is_windows():
-            for key, wb in self.workbench.iteritems():
+            for key, wb in self.workbench.items():
                 if wb.name == name:
                     wb.Show()
                     profile.settings['workbench'] = key
-            for key, wb in self.workbench.iteritems():
+            for key, wb in self.workbench.items():
                 if wb.name != name:
                     wb.Hide()
         else:
-            for key, wb in self.workbench.iteritems():
+            for key, wb in self.workbench.items():
                 if wb.name != name:
                     wb.Hide()
-            for key, wb in self.workbench.iteritems():
+            for key, wb in self.workbench.items():
                 if wb.name == name:
                     wb.Show()
                     profile.settings['workbench'] = key
@@ -472,15 +472,15 @@ class MainWindow(wx.Frame):
         info = wx.AboutDialogInfo()
         icon = wx.Icon(resources.get_path_for_image("horus.ico"), wx.BITMAP_TYPE_ICO)
         info.SetIcon(icon)
-        info.SetName(u'Horus')
+        info.SetName('Horus')
         info.SetVersion(__version__)
         tech_description = _('Horus is an Open Source 3D Scanner manager')
         tech_description += '\nVersion: ' + __version__
         tech_description += '\nDatetime: ' + __datetime__
         tech_description += '\nCommit: ' + __commit__
         info.SetDescription(tech_description)
-        info.SetCopyright(u'(C) 2014-2016 Mundo Reader S.L.')
-        info.SetWebSite(u'http://www.bq.com')
+        info.SetCopyright('(C) 2014-2016 Mundo Reader S.L.')
+        info.SetWebSite('http://www.bq.com')
         info.SetLicence("Horus is free software; you can redistribute it and/or modify it\n"
                         "under the terms of the GNU General Public License as published by\n"
                         "the Free Software Foundation; either version 2 of the License,\n"
@@ -492,10 +492,10 @@ class MainWindow(wx.Frame):
                         "received a copy of the GNU General Public License along with\n"
                         "File Hunter; if not, write to the Free Software Foundation,\n"
                         "Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA")
-        info.AddDeveloper(u'Jesús Arroyo, Irene Sanz, Jorge Robles')
-        info.AddDocWriter(u'Jesús Arroyo, Ángel Larrañaga')
-        info.AddArtist(u'Nestor Toribio')
-        info.AddTranslator(u'Jesús Arroyo, Irene Sanz, Alexandre Galode, Natasha da Silva, '
+        info.AddDeveloper('Jesús Arroyo, Irene Sanz, Jorge Robles')
+        info.AddDocWriter('Jesús Arroyo, Ángel Larrañaga')
+        info.AddArtist('Nestor Toribio')
+        info.AddTranslator('Jesús Arroyo, Irene Sanz, Alexandre Galode, Natasha da Silva, '
                            'Camille Montgolfier, Markus Hoedl, Andrea Fantini, Maria Albuquerque, '
                            'Meike Schirmeister')
         wx.AboutBox(info)
@@ -541,7 +541,7 @@ class MainWindow(wx.Frame):
         dlg.Destroy()
 
     def update_profile_to_all_controls(self):
-        for _, w in self.workbench.iteritems():
+        for _, w in self.workbench.items():
             w.update_controls()
         self.workbench[profile.settings['workbench']].update_controls()
 
@@ -596,7 +596,7 @@ class MainWindow(wx.Frame):
         current_video_id = profile.settings['camera_id']
         if len(video_list) > 0:
             if current_video_id not in video_list:
-                profile.settings['camera_id'] = unicode(video_list[0])
+                profile.settings['camera_id'] = str(video_list[0])
 
         if len(profile.settings['camera_id']):
             driver.camera.camera_id = int(profile.settings['camera_id'][-1:])

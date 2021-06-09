@@ -30,8 +30,8 @@ class ScanningPage(WizardPage):
         else:
             value = _("High")
         self.resolution_label = wx.StaticText(self.panel, label=_("Resolution"))
-        self.resolution_label.SetToolTip(wx.ToolTip(_(u"Set the motor step. High (0.45º),"
-                                                      u" Medium (0.9º), Low (1.8º)")))
+        self.resolution_label.SetToolTip(wx.ToolTip(_("Set the motor step. High (0.45º),"
+                                                      " Medium (0.9º), Low (1.8º)")))
         self.resolution_combo_box = wx.ComboBox(self.panel, wx.ID_ANY,
                                                 size=(200, -1),
                                                 value=value,
@@ -42,7 +42,7 @@ class ScanningPage(WizardPage):
         choices = profile.settings.get_possible_values('use_laser')
         for i in choices:
             _choices.append(_(i))
-        self.laser_dict = dict(zip(_choices, choices))
+        self.laser_dict = dict(list(zip(_choices, choices)))
         self.laser_label = wx.StaticText(self.panel, label=_("Use laser"))
         self.laser_combo_box = wx.ComboBox(self.panel, wx.ID_ANY,
                                            size=(200, -1),

@@ -110,7 +110,7 @@ class Breadcrumbs(wx.Panel):
         self.SetSizer(vbox)
         self.Layout()
 
-    def _hide(self, label):
+    def _hide(label):
         for page in self.pages:
             if page.enable_next:
                 if page.title != label:
@@ -118,7 +118,7 @@ class Breadcrumbs(wx.Panel):
             else:
                 break
 
-    def _show(self, label):
+    def _show(label):
         for page in self.pages:
             if page.enable_next:
                 if page.title == label:

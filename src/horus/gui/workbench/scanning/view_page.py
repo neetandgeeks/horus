@@ -43,9 +43,9 @@ class ViewPage(wx.SplitterWindow):
         choices = profile.settings.get_possible_values('video_scanning')
         for i in choices:
             _choices.append(_(i))
-        self.video_views_dict = dict(zip(_choices, choices))
+        self.video_views_dict = dict(list(zip(_choices, choices)))
         self.combo_video_views = wx.ComboBox(self.video_view,
-                                             value=_(u'Texture'),
+                                             value=_('Texture'),
                                              choices=_choices, style=wx.CB_READONLY,
                                              size=(100, -1), pos=(0, -1))
         self.combo_video_views.Hide()
@@ -55,7 +55,7 @@ class ViewPage(wx.SplitterWindow):
         self.video_view.Bind(wx.EVT_SHOW, self.on_show)
 
     def on_show(self, event):
-        if event.GetShow():
+        if event.IsShown():
             if driver.is_connected and profile.settings['workbench'] == 'scanning':
                 self.video_view.play()
         else:

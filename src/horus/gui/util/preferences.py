@@ -39,7 +39,7 @@ class PreferencesDialog(wx.Dialog):
         values = profile.settings.get_possible_values('luminosity')
         for value in values:
             self.luminosity_values.append(_(value))
-        self.luminosity_dict = dict(zip(self.luminosity_values, values))
+        self.luminosity_dict = dict(list(zip(self.luminosity_values, values)))
         self.luminosity_label = wx.StaticText(self, label=_("Luminosity"))
         self.luminosity_label.SetToolTip(wx.ToolTip(
             _("Change the luminosity until colored lines appear "

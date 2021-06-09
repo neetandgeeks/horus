@@ -54,7 +54,7 @@ class CameraControl(ExpandablePanel):
     def _save_image(self):
         image = driver.camera.capture_image()
         dlg = wx.FileDialog(self, _("Save image"), style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
-        wildcard_list = ';'.join(map(lambda s: '*' + s, ['.png']))
+        wildcard_list = ';'.join(['*' + s for s in ['.png']])
         wildcard_filter = "Image files (%s)|%s;%s" % (wildcard_list, wildcard_list,
                                                       wildcard_list.upper())
         dlg.SetWildcard(wildcard_filter)
@@ -224,7 +224,7 @@ class GcodeSection(ControlPanel):
         self.Layout()
 
         # Events
-        self.request.Bind(wx.wx.EVT_KEY_DOWN, self.on_key_pressed)
+        self.request.Bind(wx.EVT_KEY_DOWN, self.on_key_pressed)
         self.control.Bind(wx.EVT_BUTTON, self.on_button_clicked)
 
     def on_key_pressed(self, event):

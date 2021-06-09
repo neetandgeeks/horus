@@ -31,37 +31,37 @@ class ExpandableCollection(wx.Panel):
         self.vbox.Add(panel, 0, wx.ALL ^ wx.TOP | wx.EXPAND, 3)
 
     def init_panels_layout(self):
-        values = self.expandable_panels.values()
+        values = list(self.expandable_panels.values())
         if len(values) > 0:
             self._expand_callback(values[0])
 
     def _expand_callback(self, selected_panel):
         if sys.is_windows():
             selected_panel.show_content()
-            for panel in self.expandable_panels.values():
+            for panel in list(self.expandable_panels.values()):
                 if panel is not selected_panel:
                     panel.hide_content()
         else:
-            for panel in self.expandable_panels.values():
+            for panel in list(self.expandable_panels.values()):
                 if panel is not selected_panel:
                     panel.hide_content()
             selected_panel.show_content()
 
     # Engine callbacks
     def update_callbacks(self):
-        for panel in self.expandable_panels.values():
+        for panel in list(self.expandable_panels.values()):
             panel.content.update_callbacks()
 
     def enable_content(self):
-        for panel in self.expandable_panels.values():
+        for panel in list(self.expandable_panels.values()):
             panel.content.Enable()
 
     def disable_content(self):
-        for panel in self.expandable_panels.values():
+        for panel in list(self.expandable_panels.values()):
             panel.content.Disable()
 
     def update_from_profile(self):
-        for panel in self.expandable_panels.values():
+        for panel in list(self.expandable_panels.values()):
             panel.enable_restore(True)
             panel.content.update_from_profile()
 
@@ -225,8 +225,8 @@ class TitleText(wx.Panel):
         self.line = wx.StaticLine(self)
 
         if hand_cursor:
-            self.title.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
-            self.line.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+            self.title.SetCursor(wx.Cursor(wx.CURSOR_HAND))
+            self.line.SetCursor(wx.Cursor(wx.CURSOR_HAND))
 
         # Layout
         vbox = wx.BoxSizer(wx.VERTICAL)
@@ -256,10 +256,7 @@ class ControlCollection(wx.Panel):
 
         # Layout
         self.vbox = wx.BoxSizer(wx.VERTICAL)
-        if sys.is_wx30():
-            self.SetSizerAndFit(self.vbox)
-        else:
-            self.SetSizer(self.vbox)
+        self.SetSizerAndFit(self.vbox)
         self.Layout()
 
     def __getitem__(self, key):
@@ -271,14 +268,13 @@ class ControlCollection(wx.Panel):
         self.control_panels.update({_name: control})
         self.vbox.Add(control, 0, wx.BOTTOM | wx.EXPAND, 5)
         self.vbox.Layout()
-        if sys.is_wx30():
-            self.SetSizerAndFit(self.vbox)
+        self.SetSizerAndFit(self.vbox)
 
     def update_callback(self, _name, _callback):
         self.control_panels[_name].set_engine_callback(_callback)
 
     def reset_profile(self):
-        for control in self.control_panels.values():
+        for control in list(self.control_panels.values()):
             control.reset_profile()
 
     def enable(self, _name):
@@ -288,7 +284,7 @@ class ControlCollection(wx.Panel):
         self.items[_name].Disable()
 
     def update_from_profile(self):
-        for control in self.control_panels.values():
+        for control in list(self.control_panels.values()):
             control.update_from_profile()
 
     def show_item(self, _name):
@@ -381,7 +377,7 @@ class Slider(ControlPanel):
 
         # Layout
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        if sys.is_wx30():
+        if sys.is_darwin():
             hbox.Add(self.label, 0, wx.BOTTOM | wx.RIGHT | wx.ALIGN_CENTER_VERTICAL, 0)
             hbox.AddStretchSpacer()
             hbox.Add(self.control, 0, wx.BOTTOM | wx.ALIGN_RIGHT | wx.ALIGN_CENTER_VERTICAL, 5)
@@ -425,7 +421,7 @@ class ComboBox(ControlPanel):
         choices = self.setting._possible_values
         _choices = [_(i) for i in choices]
 
-        self.key_dict = dict(zip(_choices, choices))
+        self.key_dict = dict(list(zip(_choices, choices)))
 
         # Elements
         label = wx.StaticText(self, label=_(self.setting._label), size=(130, -1))

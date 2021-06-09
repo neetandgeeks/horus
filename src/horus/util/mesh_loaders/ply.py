@@ -78,7 +78,7 @@ def load_scene(filename):
         header = ''
 
         while line != 'end_header\n' and line != '':
-            line = f.readline()
+            line = f.readline().decode('utf-8')
             header += line
         # Discart faces
         header = header.split('element face ')[0].split('\n')
@@ -107,7 +107,7 @@ def load_scene(filename):
                     count = int(line.split('element vertex ')[1])
                 elif 'property ' in line:
                     props = line.split(' ')
-                    if props[2] in dt.keys():
+                    if props[2] in list(dt.keys()):
                         dtype = dtype + [(dt[props[2]], df[props[1]], (ds[props[2]],))]
 
             dtype = np.dtype(dtype)
@@ -153,15 +153,15 @@ def save_scene_stream(stream, _object):
         frame += "element face 0\n"
         frame += "property list uchar int vertex_indices\n"
         frame += "end_header\n"
-        stream.write(frame)
+        stream.write(bytes(frame, 'utf-8'))
         if m.vertex_count > 0:
             if binary:
-                for i in xrange(m.vertex_count):
+                for i in range(m.vertex_count):
                     stream.write(struct.pack("<fffBBB",
                                              m.vertexes[i, 0], m.vertexes[i, 1], m.vertexes[i, 2],
                                              m.colors[i, 0], m.colors[i, 1], m.colors[i, 2]))
             else:
-                for i in xrange(m.vertex_count):
+                for i in range(m.vertex_count):
                     stream.write("{0} {1} {2} {3} {4} {5}\n".format(
                                  m.vertexes[i, 0], m.vertexes[i, 1], m.vertexes[i, 2],
                                  m.colors[i, 0], m.colors[i, 1], m.colors[i, 2]))

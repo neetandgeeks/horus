@@ -6,8 +6,8 @@ __copyright__ = 'Copyright (C) 2014-2016 Mundo Reader S.L.'
 __license__ = 'GNU General Public License v2 http://www.gnu.org/licenses/gpl2.html'
 
 __version__ = '0.2rc1'
-__datetime__ = ''
-__commit__ = ''
+__datetime__ = '2016-05-21 10:27:46 +0200'
+__commit__ = '68c1ddd156790eaba4e02f122e505a5a17210de6'
 
 
 def Singleton(class_):

@@ -77,7 +77,7 @@ class Board(object):
             self._serial_port = serial.Serial(self.serial_name, self.baud_rate, timeout=2)
             if self._serial_port.isOpen():
                 self._reset()  # Force Reset and flush
-                version = self._serial_port.readline()
+                version = self._serial_port.readline().decode('utf-8')
                 if "Horus 0.1 ['$' for help]" in version:
                     raise OldFirmware()
                 elif "Horus 0.2 ['$' for help]" in version:
@@ -174,11 +174,11 @@ class Board(object):
                 self._send_command("M70T" + str(index + 1))
 
     def lasers_on(self):
-        for i in xrange(self._laser_number):
+        for i in range(self._laser_number):
             self.laser_on(i)
 
     def lasers_off(self):
-        for i in xrange(self._laser_number):
+        for i in range(self._laser_number):
             self.laser_off(i)
 
     def ldr_sensor(self, pin):
@@ -203,7 +203,7 @@ class Board(object):
                 try:
                     self._serial_port.flushInput()
                     self._serial_port.flushOutput()
-                    self._serial_port.write(req + "\r\n")
+                    self._serial_port.write(bytes(req + "\r\n", 'UTF-8'))
                     while req != '~' and req != '!' and ret == '':
                         ret = self.read(read_lines)
                         time.sleep(0.01)
@@ -219,9 +219,9 @@ class Board(object):
 
     def read(self, read_lines=False):
         if read_lines:
-            return ''.join(self._serial_port.readlines())
+            return ''.join(self._serial_port.readlines().decode('utf-8'))
         else:
-            return ''.join(self._serial_port.readline())
+            return ''.join(self._serial_port.readline().decode('utf-8'))
 
     def _success(self):
         self._tries = 0
@@ -241,21 +241,21 @@ class Board(object):
     def _reset(self):
         self._serial_port.flushInput()
         self._serial_port.flushOutput()
-        self._serial_port.write("\x18\r\n")  # Ctrl-x
-        self._serial_port.readline()
+        self._serial_port.write(b"\x18\r\n")  # Ctrl-x
+        self._serial_port.readline().decode('utf-8')
 
     def get_serial_list(self):
         """Obtain list of serial devices"""
         baselist = []
         if system == 'Windows':
-            import _winreg
+            import winreg
             try:
-                key = _winreg.OpenKey(
-                    _winreg.HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM")
+                key = winreg.OpenKey(
+                    winreg.HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM")
                 i = 0
                 while True:
                     try:
-                        values = _winreg.EnumValue(key, i)
+                        values = winreg.EnumValue(key, i)
                     except:
                         return baselist
                     if 'USBSER' in values[0] or \

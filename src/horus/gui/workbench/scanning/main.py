@@ -6,6 +6,7 @@ __copyright__ = 'Copyright (C) 2014-2016 Mundo Reader S.L.'
 __license__ = 'GNU General Public License v2 http://www.gnu.org/licenses/gpl2.html'
 
 import struct
+import binascii
 import wx._core
 
 from horus.util import resources, profile
@@ -29,13 +30,13 @@ class ScanningWorkbench(Workbench):
         self.toolbar_scan = toolbar_scan
 
         # Elements
-        self.play_tool = self.toolbar_scan.AddLabelTool(
+        self.play_tool = self.toolbar_scan.AddTool(
             wx.NewId(), _("Play"),
             wx.Bitmap(resources.get_path_for_image("play.png")), shortHelp=_("Play"))
-        self.stop_tool = self.toolbar_scan.AddLabelTool(
+        self.stop_tool = self.toolbar_scan.AddTool(
             wx.NewId(), _("Stop"),
             wx.Bitmap(resources.get_path_for_image("stop.png")), shortHelp=_("Stop"))
-        self.pause_tool = self.toolbar_scan.AddLabelTool(
+        self.pause_tool = self.toolbar_scan.AddTool(
             wx.NewId(), _("Pause"),
             wx.Bitmap(resources.get_path_for_image("pause.png")), shortHelp=_("Pause"))
         self.toolbar_scan.Realize()
@@ -93,7 +94,7 @@ class ScanningWorkbench(Workbench):
         self._enable_tool_scan(self.play_tool, True)
         self._enable_tool_scan(self.stop_tool, False)
         self._enable_tool_scan(self.pause_tool, False)
-        driver.camera.set_frame_rate(int(profile.settings['frame_rate']))
+        driver.camera.set_frame_rate(int(profile.settings['framerate']))
         driver.camera.set_resolution(
             profile.settings['camera_width'], profile.settings['camera_height'])
         driver.camera.set_rotate(profile.settings['camera_rotate'])
@@ -139,7 +140,7 @@ class ScanningWorkbench(Workbench):
         ciclop_scan.motor_speed = profile.settings['motor_speed_scanning']
         ciclop_scan.motor_acceleration = profile.settings['motor_acceleration_scanning']
         ciclop_scan.color = struct.unpack(
-            'BBB', profile.settings['point_cloud_color'].decode('hex'))
+            'BBB', binascii.unhexlify(profile.settings['point_cloud_color']))
         ciclop_scan.set_scan_sleep(profile.settings['scan_sleep'])
         point_cloud_roi.set_show_center(profile.settings['show_center'])
         point_cloud_roi.set_use_roi(profile.settings['use_roi'])
