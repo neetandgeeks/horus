@@ -15,7 +15,7 @@ This project has been developed in [Python](https://www.python.org/) language an
 ## Installation
 
 ### CAUTION
-This Python 3.x port is currently unstable.
+This Python 3.x port is currently **highly unstable**.
 
 ### With Python 3.8.x
 
